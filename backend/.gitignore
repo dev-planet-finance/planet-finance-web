@@ -1,8 +1,11 @@
-node_modules
-# Keep environment variables out of version control
+# Node modules
+node_modules/
+
+# Compiled Prisma files (generated locally)
+src/generated/prisma/
+
+# Firebase credentials
+secrets/firebase-admin-sdk.json
+
+# Environment variables
 .env
-
-/src/generated/prisma
-/secrets/firebase-admin-sdk.json
-
-

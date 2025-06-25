@@ -7,10 +7,107 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  password String
-  createdAt DateTime @default(now())
+model PortfolioHolding {
+  id                      String   @id @default(uuid())
+  userId                  String
+  user                    User     @relation(fields: [userId], references: [id])
+
+  symbol                  String
+  cryptoName              String?
+  investmentType          InvestmentType
+  quantity                Decimal
+  averageCost             Decimal
+  currentPrice            Decimal?
+  totalDividends          Decimal?
+  dividendReinvestEnabled Boolean @default(false)
+  splitAdjustments        Json?
+
+  broker                  String?
+  brokerAccountId         String?
+  region                  String?
+  industry                String?
+  assetClass              String?
+  strategy                String?
+  isActive                Boolean  @default(true)
+  notes                   String?
+
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  transactions            PortfolioTransaction[]
 }
 
+model PortfolioTransaction {
+  id                  String   @id @default(uuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id])
+  holdingId           String?
+  holding             PortfolioHolding? @relation(fields: [holdingId], references: [id])
+
+  action              TransactionAction
+  symbol              String
+  cryptoName          String?
+
+  quantity            Decimal?
+  pricePerUnit        Decimal?
+  fiatFee             Decimal?
+  cryptoFee           Decimal?
+  currency            String
+  fxRate              Decimal?
+
+  platform            String?
+  assetClass          String?
+  sector              String?
+  country             String?
+  strategy            String?
+  accountHolder       String?
+
+  totalCost           Decimal?
+  costBasisMethod     CostBasisMethod?
+  notes               String?
+
+  date                DateTime
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model User {
+  id          String                  @id @default(uuid())
+  email       String                  @unique
+  name        String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  transactions PortfolioTransaction[]
+  holdings     PortfolioHolding[]
+}
+
+enum InvestmentType {
+  Stock
+  ETF
+  Crypto
+  Option
+  Forex
+}
+
+enum TransactionAction {
+  Buy
+  Sell
+  DRIP
+  CashDividend
+  CashDeposit
+  CashWithdrawal
+  CashInterest
+  CryptoInterest
+  TransferSend
+  TransferReceive
+  Fee
+  FreeAsset
+  Split
+}
+
+enum CostBasisMethod {
+  FIFO
+  LIFO
+  AVG
+}

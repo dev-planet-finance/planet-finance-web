@@ -1,25 +1,23 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 import express from 'express';
 import cors from 'cors';
-import pingRoute from './routes/ping';
-import authRoute from './routes/auth';
+import dotenv from 'dotenv';
+import portfolioRoutes from './routes/portfolio';
+import testRoutes from './routes/test';
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
-
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/ping', pingRoute);
-app.use('/api/auth', authRoute); //
+app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/test', testRoutes);
 
 app.get('/', (_req, res) => {
-  res.send('Planet Finance Backend is running! 🚀');
+  res.send('Planet Finance Backend is running');
 });
 
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
-
