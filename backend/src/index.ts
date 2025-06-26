@@ -5,6 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import portfolioRoutes from './routes/portfolio';
 import testRoutes from './routes/test';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -13,7 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/portfolio', portfolioRoutes);
-app.use('/api/test', testRoutes);
+app.use('/api', testRoutes);
+app.use('/api/auth', authRoutes);
 
 app.get('/', (_req, res) => {
   res.send('Planet Finance Backend is running');

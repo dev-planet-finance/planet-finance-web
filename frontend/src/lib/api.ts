@@ -37,4 +37,3 @@ export async function pingServer(): Promise<string> {
   const data = await response.json();
   return data.message;
 }
-
