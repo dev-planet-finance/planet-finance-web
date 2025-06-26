@@ -1,5 +1,5 @@
 import express from 'express';
-import admin from '../utils/firebaseAdmin';
+import { adminAuth } from '../lib/firebaseAdmin';
 
 const router = express.Router();
 
@@ -7,7 +7,7 @@ router.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await admin.auth().createUser({
+    const user = await adminAuth.createUser({
       email,
       password,
     });

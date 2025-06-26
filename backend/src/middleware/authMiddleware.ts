@@ -1,26 +1,21 @@
-// src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { adminAuth } from '../lib/firebaseAdmin';
 
-export const authenticate = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Unauthorized: Missing token' });
-    return;
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
 
-  const idToken = authHeader.split('Bearer ')[1];
+  const token = authHeader.split(' ')[1];
 
   try {
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const decodedToken = await adminAuth.verifyIdToken(token);
     (req as any).user = decodedToken;
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    console.error('Token verification failed:', error);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };

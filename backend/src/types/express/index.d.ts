@@ -1,4 +1,4 @@
-// src/express.d.ts
+// src/types/express/index.d.ts
 
 import { Request } from 'express';
 

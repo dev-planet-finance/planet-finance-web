@@ -8,7 +8,6 @@ import { authenticate } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// 🔒 Secure endpoints by casting middleware and controller to RequestHandler[]
 router.post(
   '/transaction',
   [authenticate as RequestHandler, createTransaction as RequestHandler]
