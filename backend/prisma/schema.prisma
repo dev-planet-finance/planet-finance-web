@@ -22,7 +22,7 @@ model PortfolioHolding {
   dividendReinvestEnabled Boolean @default(false)
   splitAdjustments        Json?
 
-  broker                  String?
+  platform                String?
   brokerAccountId         String?
   region                  String?
   industry                String?
@@ -92,6 +92,7 @@ enum InvestmentType {
   Crypto
   Option
   Forex
+  Cash
 }
 
 enum TransactionActionType {
