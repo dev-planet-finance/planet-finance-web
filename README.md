@@ -1,41 +1,42 @@
 # 🌍 Planet Finance Web App
 
-A full-stack personal finance app built in TypeScript using **Next.js**, **Express**, **PostgreSQL (via Railway)**, and **Firebase Auth**, inspired by Delta, Stock Events, and Finary — with custom budgeting, portfolio, and debt tracking logic based on Planet Finance’s Google Sheets templates.
+A full-stack personal finance app built in TypeScript using **Next.js**, **Express**, **PostgreSQL (via Railway)**, and **Firebase Auth**, with custom budgeting, portfolio, and debt tracking logic based on Planet Finance’s Google Sheets templates.
 
 ---
 
 ## ✅ Project Progress (by Sprints)
 
-### 🚀 Sprint 1: Infrastructure Setup
-- Set up project folders for `frontend` (Next.js) and `backend` (Express)
-- Connected PostgreSQL via Railway
-- Installed all core packages (Prisma, dotenv, firebase-admin, etc.)
-- Setup GitHub, Vercel (frontend), Railway (backend)
+## ✅ Completed Sprints
 
-### 🔐 Sprint 2: Authentication Middleware
-- Firebase Admin SDK integration
-- Token validation middleware in Express
-- Protected route `/api/test/protected` to validate token authentication
+### Sprint 1: Project Setup
+- Initialized monorepo.
+- Configured backend and frontend environments.
+- Set up CI/CD pipelines.
 
-### 📊 Sprint 3: Portfolio Tracker DB Schema
-- Created `User`, `PortfolioHolding`, `PortfolioTransaction` Prisma models
-- Fields included asset metadata, strategy, platform, FX rate, etc.
-- Supported cost basis methods (FIFO, LIFO, AVG)
+### Sprint 2: Authentication System
+- Implemented user registration and login.
+- Integrated JWT-based authentication.
+- Established role-based access controls.
 
-### 🔁 Sprint 4: Full Integration & Testing
-- Firebase Auth wired in frontend (email/password login)
-- Backend login/register routes added
-- Middleware tested using Postman + curl
-- Frontend component connected to Firebase client SDK
-- Tested registration and login flows with real Firebase project
-- Confirmed secure access to protected backend routes
+### Sprint 3: Portfolio Tracker - Basic CRUD
+- Developed models for holdings and transactions.
+- Created endpoints for CRUD operations.
+- Established basic transaction recording.
 
-### 🧠 Sprint 5: Transaction Logic Setup
-- Expanded `TransactionAction` enum to include:
-  - `Buy`, `Sell`, `CashDividend`, `DRIP`, `Split`, `CashFee`, `CashDeposit`, `CashWithdrawal`
-  - `ParcelFee`, `AssetTransferIn`, `AssetTransferOut`, `FreeAsset`, `CashInterest`, `CryptoInterest`
-- Updated Prisma schema and migrated DB
-- Pushed successful schema changes to GitHub
+### Sprint 4: Portfolio Tracker - Transaction Actions
+- Expanded transaction types.
+- Implemented corresponding logic.
+- Ensured accurate updates to holdings.
+
+### Sprint 5: Portfolio Logic Enhancements
+- Integrated cost basis calculations (AVG method).
+- Calculated realized and unrealized gains.
+- Developed total return over time metrics.
+
+### Sprint 6: Transfer Functionality
+- Implemented TransferIn and TransferOut transactions.
+- Ensured accurate asset movement between platforms.
+- Updated portfolio summaries accordingly.
 
 ---
 
@@ -55,18 +56,35 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 
 ## 📌 Next Sprints (Planned)
 
-- **Sprint 6**: Implement Portfolio Logic
-  - Cost basis calculation (FIFO, LIFO, AVG)
-  - Realized/unrealized gains
-  - Total return over time
-- **Sprint 7**: Budget Tracker setup
-  - Income, expenses, transfers
-  - Sync with investment funding flows
-- **Sprint 8**: Debt Tracker setup
-  - Loan creation, recurring repayments
-  - Optional syncing with budget transactions
-- **Sprint 9**: Net Worth Dashboard
-  - Time-series breakdown of assets, liabilities, cash
+### Sprint 7: Budget Tracker - Backend Implementation
+- Design and implement models for budgeting.
+- Develop endpoints for budget management.
+- Integrate budgeting logic.
+
+### Sprint 8: Debt Tracker - Backend Implementation
+- Design and implement models for debts.
+- Develop endpoints for debt management.
+- Integrate repayment logic.
+
+### Sprint 9: Net Worth Summary - Backend Implementation
+- Aggregate data from all trackers.
+- Calculate net worth over time.
+- Develop endpoints for net worth summaries.
+
+### Sprint 10: Portfolio Tracker - Frontend Integration
+- Develop frontend components for portfolio.
+- Integrate live price APIs.
+- Implement user-friendly features.
+
+### Sprint 11: Budget & Debt Tracker - Frontend Integration
+- Develop frontend components for budgeting and debt.
+- Ensure seamless user experience.
+- Implement visualizations.
+
+### Sprint 12: Net Worth Summary - Frontend Integration
+- Develop dashboard for net worth.
+- Integrate charts and graphs.
+- Ensure real-time updates.
 
 ---
 
