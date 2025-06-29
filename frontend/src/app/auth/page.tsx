@@ -11,31 +11,43 @@ export default function AuthPage() {
   const auth = getAuth(app);
 
   const handleRegister = async () => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setResponse(`✅ Registered: ${userCredential.user.email}`);
-    } catch (error) {
-      setResponse(`❌ Register failed: ${(error as any).message}`);
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    setResponse(`✅ Registered: ${userCredential.user.email}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      setResponse(`❌ Register failed: ${error.message}`);
+    } else {
+      setResponse('❌ Register failed: Unknown error');
     }
-  };
+  }
+};
 
   const handleLogin = async () => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setResponse(`✅ Logged in: ${userCredential.user.email}`);
-    } catch (error) {
-      setResponse(`❌ Login failed: ${(error as any).message}`);
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    setResponse(`✅ Logged in: ${userCredential.user.email}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      setResponse(`❌ Login failed: ${error.message}`);
+    } else {
+      setResponse('❌ Login failed: Unknown error');
     }
-  };
+  }
+};
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setResponse('👋 Logged out');
-    } catch (error) {
-      setResponse(`❌ Logout failed: ${(error as any).message}`);
+const handleLogout = async () => {
+  try {
+    await signOut(auth);
+    setResponse('👋 Logged out');
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      setResponse(`❌ Logout failed: ${error.message}`);
+    } else {
+      setResponse('❌ Logout failed: Unknown error');
     }
-  };
+  }
+};
 
   return (
     <main style={{ padding: 20 }}>
