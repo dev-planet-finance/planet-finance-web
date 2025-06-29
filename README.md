@@ -29,9 +29,14 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 - Ensured accurate updates to holdings.
 
 ### Sprint 5: Portfolio Logic Enhancements
-- Integrated cost basis calculations (AVG method).
-- Calculated realized and unrealized gains.
-- Developed total return over time metrics.
+- Implemented cost basis logic using AVG method (for Buy and DRIP actions).
+- Enhanced portfolioLogic.ts with robust transaction handling logic.
+- Validated results via Postman and summary dashboard calculations.
+- Added support for CashDividend, CashFee, CashDeposit, and CashWithdrawal.
+- Planned but not yet implemented:
+  - FIFO / LIFO cost basis methods.
+  - Realized vs. unrealized gains tracking.
+  - Total return over time (requires time-series holdings history).
 
 ### Sprint 6: Transfer Functionality
 - Implemented TransferIn and TransferOut transactions.
