@@ -37,59 +37,78 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
   - FIFO / LIFO cost basis methods.
   - Realized vs. unrealized gains tracking.
   - Total return over time (requires time-series holdings history).
-
-### Sprint 6: Transfer Functionality
 - Implemented TransferIn and TransferOut transactions.
 - Ensured accurate asset movement between platforms.
 - Updated portfolio summaries accordingly.
+
+#### Sprint 6: Budget Tracker – Backend
+- Created models for income, expenses, and transfers.
+- Implemented unified budget transaction flow.
+- Integrated recurring logic (future use).
+
+#### Sprint 7: Debt Tracker – Backend
+- Created models: `Debt`, `DebtTransaction`.
+- Added logic for amortization and repayments.
+- Built endpoints to record debt activity and retrieve data.
+
+#### Sprint 8: Net Worth Summary – Backend
+- Built endpoint to calculate total net worth by date.
+- Aggregates holdings, debts, and budget data.
+- Connected with `portfolioLogic.ts`, `debtLogic.ts`, and `budgetLogic.ts`.
+
+#### Sprint 9: Market Data – Price API Integration
+- Integrated live asset price fetching from **Finnhub**, **EODHD**, and **CoinGecko**.
+- Designed fallback logic for global stock/ETF and crypto support.
+- Handles ASX, TSX, LSE, NSE, NYSE, NASDAQ, crypto and more.
+
+#### Sprint 10: Portfolio Tracker – Frontend UI
+- Created portfolio dashboard in Next.js frontend.
+- Displays real-time prices and market value.
+- Authenticated fetch using Firebase token and backend APIs.
 
 ---
 
 ## 📦 Stack
 
-| Layer         | Tech                             |
-|---------------|----------------------------------|
-| Frontend      | Next.js 15 (App Router), TypeScript |
-| Backend       | Express.js                       |
-| Auth          | Firebase (email/password)        |
-| DB            | PostgreSQL (via Railway)         |
-| ORM           | Prisma                           |
-| Hosting       | Vercel (frontend), Railway (backend) |
-| Dev Tools     | Postman, GitHub, Vercel CLI      |
+| Layer     | Tech                                  |
+|-----------|---------------------------------------|
+| Frontend  | Next.js 15 (App Router), TypeScript   |
+| Backend   | Express.js                            |
+| Auth      | Firebase (email/password only)        |
+| DB        | PostgreSQL (via Railway)              |
+| ORM       | Prisma                                |
+| Hosting   | Vercel (frontend), Railway (backend)  |
+| APIs      | EODHD (global), Finnhub (US only), CoinGecko (crypto) |
+| Dev Tools | Postman, GitHub, Vercel CLI, Railway  |
 
 ---
 
-## 📌 Next Sprints (Planned)
+## 📌 Upcoming Sprints
 
-### Sprint 7: Budget Tracker - Backend Implementation
-- Design and implement models for budgeting.
-- Develop endpoints for budget management.
-- Integrate budgeting logic.
+### Sprint 11: Bulk Price Fetching
+- Add support for batch symbol fetch on backend.
+- Fetch live prices for entire portfolio in one API call.
+- Improve performance on frontend load.
 
-### Sprint 8: Debt Tracker - Backend Implementation
-- Design and implement models for debts.
-- Develop endpoints for debt management.
-- Integrate repayment logic.
+### Sprint 12: Ticker Search Endpoint
+- Build API to search all supported tickers.
+- Distinguish crypto vs stocks (e.g. BTC vs BTC.AX).
+- Use in transaction inputs to reduce user error.
 
-### Sprint 9: Net Worth Summary - Backend Implementation
-- Aggregate data from all trackers.
-- Calculate net worth over time.
-- Develop endpoints for net worth summaries.
+### Sprint 13: Budget & Debt Frontend
+- Display budget and debt activity in dashboard.
+- Show insights and summaries.
+- Allow new entries via simple form.
 
-### Sprint 10: Portfolio Tracker - Frontend Integration
-- Develop frontend components for portfolio.
-- Integrate live price APIs.
-- Implement user-friendly features.
+### Sprint 14: Net Worth Dashboard
+- Visualize net worth over time.
+- Connect to backend endpoint and chart trends.
 
-### Sprint 11: Budget & Debt Tracker - Frontend Integration
-- Develop frontend components for budgeting and debt.
-- Ensure seamless user experience.
-- Implement visualizations.
-
-### Sprint 12: Net Worth Summary - Frontend Integration
-- Develop dashboard for net worth.
-- Integrate charts and graphs.
-- Ensure real-time updates.
+### Sprint 15+: Optional Features
+- Add cost basis methods (FIFO / LIFO)
+- Realized/unrealized gain calculations
+- Multi-currency support
+- Looker dashboard integration
 
 ---
 
@@ -99,7 +118,7 @@ This project is based on Planet Finance’s premium financial trackers (GSheets)
 
 ---
 
-## 🛠 Dev
+## 🛠 Dev Setup
 
 ```bash
 # Backend
