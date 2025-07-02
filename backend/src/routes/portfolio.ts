@@ -6,6 +6,7 @@ import {
   getPortfolioSummary
 } from '../controllers/portfolio.controller';
 import { authenticate } from '../middleware/authMiddleware';
+import { getLiveAssetPrice } from '../controllers/marketData.controller';
 
 const router = Router();
 
@@ -28,5 +29,7 @@ router.get(
   '/summary',
   [authenticate as RequestHandler, getPortfolioSummary as RequestHandler]
 );
+
+router.get('/price/:symbol', getLiveAssetPrice);
 
 export default router;
