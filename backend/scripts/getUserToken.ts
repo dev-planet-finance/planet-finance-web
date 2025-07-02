@@ -13,7 +13,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const email = 'demo11@user.com';
+const email = 'demo12@user.com';
 const password = '123456';
 
 signInWithEmailAndPassword(auth, email, password)

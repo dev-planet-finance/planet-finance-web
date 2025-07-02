@@ -9,6 +9,7 @@ import authRoutes from './routes/auth';
 import budgetRoutes from './routes/budget';
 import debtRoutes from './routes/debt';
 import debtTransactionRoutes from './routes/debtTransaction';
+import netWorthRoutes from './routes/netWorth';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/debt', debtRoutes);
 app.use('/api/debt/transactions', debtTransactionRoutes);
+app.use('/api/net-worth', netWorthRoutes);
 app.use('/api', testRoutes);
 app.use('/api/auth', authRoutes);
 
