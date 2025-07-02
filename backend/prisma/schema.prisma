@@ -84,6 +84,7 @@ model User {
 
   transactions PortfolioTransaction[]
   holdings     PortfolioHolding[]
+  budgetTransactions BudgetTransaction[]
 }
 
 enum InvestmentType {
@@ -133,4 +134,39 @@ enum TransactionAction {
   TransferIn
   CashInterest
   CryptoInterest
+}
+
+model BudgetTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  transactionType BudgetTransactionType @map("type")
+  subType     TransferSubType?
+
+  amount        Decimal
+  currency      String
+  fxRate        Decimal?
+  category      String?
+  account       String?
+  accountHolder String?
+  platform      String?
+  fromAccount   String?
+  toAccount     String?
+  notes         String?
+
+  date        DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum BudgetTransactionType {
+  Income
+  Expense
+  Transfer
+}
+
+enum TransferSubType {
+  Local
+  International
 }

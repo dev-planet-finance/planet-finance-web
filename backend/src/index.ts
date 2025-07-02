@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import portfolioRoutes from './routes/portfolio';
 import testRoutes from './routes/test';
 import authRoutes from './routes/auth';
+import budgetRoutes from './routes/budget';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/budget', budgetRoutes);
 app.use('/api', testRoutes);
 app.use('/api/auth', authRoutes);
 
