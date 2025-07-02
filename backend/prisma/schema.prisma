@@ -85,6 +85,7 @@ model User {
   transactions PortfolioTransaction[]
   holdings     PortfolioHolding[]
   budgetTransactions BudgetTransaction[]
+  debts Debt[]         
 }
 
 enum InvestmentType {
@@ -169,4 +170,73 @@ enum BudgetTransactionType {
 enum TransferSubType {
   Local
   International
+}
+
+model Debt {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+
+  name           String
+  lender         String?
+  originalAmount Decimal
+  termMonths     Int  
+  startDate      DateTime
+  interestRate   Decimal   // Initial interest rate
+  isVariable     Boolean   @default(false)
+  compounding    CompoundingFrequency @default(Monthly)
+  type           DebtType
+
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  transactions   DebtTransaction[]
+  variableRates  DebtInterestRate[]
+}
+
+model DebtTransaction {
+  id        String   @id @default(uuid())
+  debtId    String
+  debt      Debt     @relation(fields: [debtId], references: [id])
+
+  amount    Decimal
+  interest  Decimal?
+  principal Decimal?
+  notes     String?
+  date      DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DebtInterestRate {
+  id        String   @id @default(uuid())
+  debtId    String
+  debt      Debt     @relation(fields: [debtId], references: [id])
+
+  rate      Decimal
+  startDate DateTime
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum DebtType {
+  Mortgage
+  StudentLoan
+  CreditCard
+  PersonalLoan
+  CarLoan
+  Other
+}
+
+enum CompoundingFrequency {
+  Daily
+  Weekly
+  Fortnightly
+  Monthly
+  Quarterly
+  Annually
 }
