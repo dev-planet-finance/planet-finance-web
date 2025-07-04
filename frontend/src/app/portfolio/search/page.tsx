@@ -18,11 +18,13 @@ export default function AssetSearchPage() {
   const searchAssets = async () => {
     setLoading(true);
     setError('');
+
     try {
       const response = await fetch(`http://localhost:4000/api/market/search?q=${query}`);
       const data = await response.json();
       setResults(data);
     } catch (err) {
+      console.error('❌ Failed to fetch assets:', err);
       setError('Failed to fetch assets');
     } finally {
       setLoading(false);
