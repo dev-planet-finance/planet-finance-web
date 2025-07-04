@@ -6,7 +6,8 @@ import {
   getPortfolioSummary
 } from '../controllers/portfolio.controller';
 import { authenticate } from '../middleware/authMiddleware';
-import { getLiveAssetPrice } from '../controllers/marketData.controller';
+import { getLiveAssetPrice, searchAssets} from '../controllers/marketData.controller';
+import { getBulkPricesForUser } from '../controllers/portfolio.controller';
 
 const router = Router();
 
@@ -31,5 +32,12 @@ router.get(
 );
 
 router.get('/price/:symbol', getLiveAssetPrice);
+
+router.post(
+  '/prices',
+  [authenticate as RequestHandler, getBulkPricesForUser as RequestHandler]
+);
+
+router.get('/search', searchAssets);
 
 export default router;

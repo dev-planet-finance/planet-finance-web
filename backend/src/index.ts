@@ -10,6 +10,7 @@ import budgetRoutes from './routes/budget';
 import debtRoutes from './routes/debt';
 import debtTransactionRoutes from './routes/debtTransaction';
 import netWorthRoutes from './routes/netWorth';
+import marketRoutes from './routes/market';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/debt/transactions', debtTransactionRoutes);
 app.use('/api/net-worth', netWorthRoutes);
 app.use('/api', testRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/market', marketRoutes);
 
 app.get('/', (_req, res) => {
   res.send('Planet Finance Backend is running');

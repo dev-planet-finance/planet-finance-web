@@ -2,73 +2,57 @@
 
 import { useEffect, useState } from 'react';
 
-type Holding = {
-  id: string;
+type HoldingSummary = {
   symbol: string;
+  investmentType?: string;
   quantity: number;
-  investmentType: string;
-};
-
-type EnrichedHolding = Holding & {
-  price: number;
-  marketValue: number;
+  averageCost: number;
+  currentPrice: number;
+  marketValue: string;
+  gain: string;
+  gainPercent: string;
+  assetClass?: string;
+  platform?: string;
+  strategy?: string;
+  region?: string;
 };
 
 export default function PortfolioPage() {
-  const [holdings, setHoldings] = useState<EnrichedHolding[]>([]);
+  const [holdings, setHoldings] = useState<HoldingSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const userId = 'UhXXrtNZalRXbKETL6CijtRi7EC3'; // ✅ Your current Firebase UID
-  const token =
-    'eyJhbGciOiJSUzI1NiIsImtpZCI6Ijg3NzQ4NTAwMmYwNWJlMDI2N2VmNDU5ZjViNTEzNTMzYjVjNThjMTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vcGxhbmV0LWZpbmFuY2UtZGV2IiwiYXVkIjoicGxhbmV0LWZpbmFuY2UtZGV2IiwiYXV0aF90aW1lIjoxNzUxNDYwMTMxLCJ1c2VyX2lkIjoiVWhYWHJ0TlphbFJYYktFVEw2Q2lqdFJpN0VDMyIsInN1YiI6IlVoWFhydE5aYWxSWGJLRVRMNkNpanRSaTdFQzMiLCJpYXQiOjE3NTE0NjAxMzEsImV4cCI6MTc1MTQ2MzczMSwiZW1haWwiOiJkZW1vMTRAdXNlci5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiZGVtbzE0QHVzZXIuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.PAXPfvZ8TY82LodsVjfPVnkke7TBtoRf6UfRXzqLvyAHX1W9shTW3LAIIuF-lbK7clnyxi9J0Qycut_HET4Umw-5cEJFqNJSsg2oxdsT6adeHG3Vg9_os6_mGYXM7n66pCe2aJeBhPCO0aZws4_nXPMIjkdP9IMQ-MIOxzURJeKnBbFmajaxw5Tmr81Ju5XyJiXZjmiQk93mYNC8MN67d83oPRKTXG2ykdzxopWfHZkGg3TYZ7A8dEHeR9zl8Z2KydjIlwASFYBXK4XwsZATzo54Sugq6OyqHDe-TjvjRDfLBnMMo1SGo0aSfp6ja0CqCco5sUUcIYAJgMHHvfR0Hg'; // ✅ Your full Firebase token here (truncated for display)
+  const token = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ijg3NzQ4NTAwMmYwNWJlMDI2N2VmNDU5ZjViNTEzNTMzYjVjNThjMTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vcGxhbmV0LWZpbmFuY2UtZGV2IiwiYXVkIjoicGxhbmV0LWZpbmFuY2UtZGV2IiwiYXV0aF90aW1lIjoxNzUxNjE0OTc2LCJ1c2VyX2lkIjoiaEhjRVF5eVhIRmhEMDBBOUY3V1JJQVBrTW9yMSIsInN1YiI6ImhIY0VReXlYSEZoRDAwQTlGN1dSSUFQa01vcjEiLCJpYXQiOjE3NTE2MTQ5NzYsImV4cCI6MTc1MTYxODU3NiwiZW1haWwiOiJkZW1vMTZAdXNlci5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiZGVtbzE2QHVzZXIuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.rq-7lsrziL_PtMewl3lhrxQYXVIYd0lA3WW_76uc2goQwNhz5SVtyHyGANFQpju5vaEcTM2kHDbCYKGY2rIszRS8cKLbvOjNpn3o6iOWVYGD-EX1KOkNus8b-W3C4i6WaKrdKrIL3eCyvPjIOsWewIs2Mv7Zvc_inM8HDRX9_sCtAMn7ASD9gFMJQJc167LxciOILVJnT7uhRCEOxcndDIMwNreXzk4JJDk_6X8thFuZFIWjgEiOV3YrQo3fsE2gJ_4F0EP0EtxpBQd7Ks-qiZdf0tVQ2DcacfmSw810L69Xw29cX9GRWmnEZzyOtLEN25NNIlEn_BTBhobckWjr0g'; // ✅ Paste your latest Firebase token
 
   useEffect(() => {
-    const fetchHoldingsWithPrices = async () => {
+    const fetchSummary = async () => {
       try {
-        const holdingsRes = await fetch(
-          `http://localhost:4000/api/portfolio/transactions/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await fetch('http://localhost:4000/api/portfolio/summary', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        const holdingsData: Holding[] = await holdingsRes.json();
+        if (!res.ok) {
+          throw new Error('Failed to fetch summary');
+        }
 
-        const enriched = await Promise.all(
-          holdingsData.map(async (holding) => {
-            const priceRes = await fetch(
-              `http://localhost:4000/api/portfolio/price/${holding.symbol}`
-            );
-            const priceData = await priceRes.json();
-            const price = priceData.price || 0;
-            const marketValue = price * holding.quantity;
-
-            return {
-              ...holding,
-              price,
-              marketValue,
-            };
-          })
-        );
-
-        setHoldings(enriched);
+        const data: HoldingSummary[] = await res.json();
+        setHoldings(data);
         setLoading(false);
       } catch (err) {
-        console.error('Error loading portfolio:', err);
-        setError('Failed to load portfolio');
+        console.error('Error loading portfolio summary:', err);
+        setError('Failed to load portfolio summary');
         setLoading(false);
       }
     };
 
-    fetchHoldingsWithPrices();
+    fetchSummary();
   }, []);
 
-  const totalValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);
+  const totalValue = holdings.reduce((sum, h) => sum + parseFloat(h.marketValue), 0);
 
-  if (loading) return <div>Loading portfolio...</div>;
+  if (loading) return <div>Loading portfolio summary...</div>;
   if (error) return <div>{error}</div>;
 
   return (
@@ -96,13 +80,15 @@ export default function PortfolioPage() {
             <th align="left">Symbol</th>
             <th align="left">Type</th>
             <th align="right">Quantity</th>
+            <th align="right">Avg Cost</th>
             <th align="right">Price</th>
             <th align="right">Market Value</th>
+            <th align="right">Gain</th>
           </tr>
         </thead>
         <tbody>
           {holdings.map((h) => (
-            <tr key={h.id} style={{ borderBottom: '1px solid #eee' }}>
+            <tr key={h.symbol} style={{ borderBottom: '1px solid #eee' }}>
               <td>{h.symbol}</td>
               <td>
                 <span
@@ -114,19 +100,24 @@ export default function PortfolioPage() {
                     fontWeight: 600,
                   }}
                 >
-                  {h.investmentType}
+                  {h.investmentType || 'Unknown'}
                 </span>
               </td>
               <td align="right">{Number(h.quantity).toFixed(4)}</td>
-              <td align="right">${h.price.toFixed(2)}</td>
-              <td align="right">${h.marketValue.toFixed(2)}</td>
+              <td align="right">${Number(h.averageCost).toFixed(2)}</td>
+              <td align="right">${Number(h.currentPrice).toFixed(2)}</td>
+              <td align="right">${h.marketValue}</td>
+              <td align="right" style={{ color: parseFloat(h.gain) >= 0 ? 'limegreen' : 'red' }}>
+                ${h.gain} ({h.gainPercent}%)
+              </td>
             </tr>
           ))}
           <tr style={{ fontWeight: 'bold', borderTop: '2px solid #000' }}>
-            <td colSpan={4} align="right">
+            <td colSpan={5} align="right">
               Total Market Value:
             </td>
             <td align="right">${totalValue.toFixed(2)}</td>
+            <td />
           </tr>
         </tbody>
       </table>

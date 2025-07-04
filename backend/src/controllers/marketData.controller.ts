@@ -3,18 +3,14 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Common crypto ticker -> CoinGecko ID
-const cryptoMap: Record<string, string> = {
-  BTC: 'bitcoin',
-  ETH: 'ethereum',
-  SOL: 'solana',
-  ADA: 'cardano',
-  BNB: 'binancecoin',
-  XRP: 'ripple',
-  DOGE: 'dogecoin',
-  AVAX: 'avalanche-2',
-};
+import {
+  cryptoMap,
+  mapToEodFormat,
+  searchCryptoAssets,
+  searchStockAssets
+} from '../services/priceFetcher';
 
+// --- GET LIVE PRICE ---
 export const getLiveAssetPrice = async (req: Request, res: Response): Promise<void> => {
   const { symbol } = req.params;
 
@@ -26,10 +22,9 @@ export const getLiveAssetPrice = async (req: Request, res: Response): Promise<vo
   try {
     const upperSymbol = symbol.toUpperCase();
 
-    // --- CRYPTO ROUTE ---
+    // Crypto route
     if (cryptoMap[upperSymbol]) {
       const coingeckoId = cryptoMap[upperSymbol];
-
       const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price`, {
         params: {
           ids: coingeckoId,
@@ -48,7 +43,7 @@ export const getLiveAssetPrice = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // --- STOCK/ETF ROUTE (EODHD) ---
+    // Stock/ETF route
     const eodSymbol = mapToEodFormat(upperSymbol);
     const eodResponse = await axios.get(`https://eodhd.com/api/real-time/${eodSymbol}`, {
       params: {
@@ -70,18 +65,25 @@ export const getLiveAssetPrice = async (req: Request, res: Response): Promise<vo
   }
 };
 
-// Map user-friendly tickers to EODHD format
-function mapToEodFormat(ticker: string): string {
-  if (ticker.startsWith('ASX:')) return ticker.split(':')[1] + '.AU';
-  if (ticker.startsWith('TSX:')) return ticker.split(':')[1] + '.TO';
-  if (ticker.startsWith('LSE:')) return ticker.split(':')[1] + '.L';
-  if (ticker.startsWith('NYSE:')) return ticker.split(':')[1] + '.US';
-  if (ticker.startsWith('NASDAQ:')) return ticker.split(':')[1] + '.US';
-  if (ticker.startsWith('HKEX:')) return ticker.split(':')[1] + '.HK';
-  if (ticker.startsWith('TSE:')) return ticker.split(':')[1] + '.T';
-  if (ticker.startsWith('BSE:')) return ticker.split(':')[1] + '.BO';
-  if (ticker.startsWith('NSE:')) return ticker.split(':')[1] + '.NS';
-  if (ticker.startsWith('SSE:')) return ticker.split(':')[1] + '.SS';
-  if (ticker.startsWith('SZSE:')) return ticker.split(':')[1] + '.SZ';
-  return ticker; // for symbols like AAPL
-}
+// --- SEARCH ASSETS ---
+export const searchAssets = async (req: Request, res: Response): Promise<void> => {
+  const query = req.query.q?.toString().toLowerCase();
+
+  if (!query || query.length < 1) {
+    res.status(400).json({ error: 'Missing or invalid search query' });
+    return;
+  }
+
+  try {
+    const [cryptos, stocks] = await Promise.all([
+      searchCryptoAssets(query),
+      searchStockAssets(query),
+    ]);
+
+    const results = [...cryptos, ...stocks];
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('❌ Error during asset search:', error);
+    res.status(500).json({ error: 'Failed to search assets' });
+  }
+};

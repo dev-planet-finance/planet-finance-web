@@ -37,3 +37,19 @@ export async function pingServer(): Promise<string> {
   const data = await response.json();
   return data.message;
 }
+
+export async function fetchBulkPrices(token: string): Promise<Record<string, number>> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/portfolio/prices`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch prices: ${res.status}`);
+  }
+
+  return res.json();
+}

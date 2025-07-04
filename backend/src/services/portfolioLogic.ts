@@ -11,6 +11,7 @@ const prisma = new PrismaClient();
 export async function handleBuyTransaction(transaction: {
   userId: string;
   symbol: string;
+  investmentType: string;
   quantity: number;
   pricePerUnit: number;
   fiatFee?: number;
@@ -19,6 +20,7 @@ export async function handleBuyTransaction(transaction: {
   const {
     userId,
     symbol,
+    investmentType,
     quantity,
     pricePerUnit,
     fiatFee = 0,
@@ -35,14 +37,37 @@ export async function handleBuyTransaction(transaction: {
 
   const totalCost = new Decimal(quantity).times(pricePerUnit).plus(fiatFee);
 
+  // Validate and convert to enum
+  let parsedInvestmentType: InvestmentType;
+  switch (investmentType.toLowerCase()) {
+    case 'crypto':
+      parsedInvestmentType = InvestmentType.Crypto;
+      break;
+    case 'cash':
+      parsedInvestmentType = InvestmentType.Cash;
+      break;
+    case 'stock':
+      parsedInvestmentType = InvestmentType.Stock;
+      break;
+    case 'etf':
+      parsedInvestmentType = InvestmentType.ETF;
+      break;
+    case 'forex':
+      parsedInvestmentType = InvestmentType.Forex;
+      break;
+    default:
+      parsedInvestmentType = InvestmentType.Stock; // fallback
+  }
+
   if (!existingHolding) {
     return await prisma.portfolioHolding.create({
       data: {
         userId,
         symbol,
-        investmentType: InvestmentType.Stock,
+        investmentType: parsedInvestmentType, // ✅ FIXED
         quantity: new Decimal(quantity),
         averageCost: new Decimal(pricePerUnit),
+        currentPrice: new Decimal(pricePerUnit),
         platform,
       },
     });
@@ -56,10 +81,12 @@ export async function handleBuyTransaction(transaction: {
       data: {
         quantity: newTotalQuantity,
         averageCost: newAverageCost,
+        currentPrice: new Decimal(pricePerUnit),
       },
     });
   }
 }
+
 
 /**
  * Handles a 'Sell' transaction:
@@ -131,6 +158,7 @@ export async function getHoldingsWithSummary(userId: string) {
 
     return {
       symbol: h.symbol,
+      investmentType: h.investmentType,
       quantity: h.quantity,
       averageCost: h.averageCost,
       currentPrice,

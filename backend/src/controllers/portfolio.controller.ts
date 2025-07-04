@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
+import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
+import { cryptoMap, mapToEodFormat } from '../services/priceFetcher';
 import {
   handleBuyTransaction,
   handleSellTransaction,
@@ -23,6 +25,7 @@ export const createTransaction = async (req: Request, res: Response): Promise<Re
       holdingId,
       action,
       symbol,
+      investmentType,
       cryptoName,
       quantity,
       pricePerUnit,
@@ -51,6 +54,7 @@ export const createTransaction = async (req: Request, res: Response): Promise<Re
   await handleBuyTransaction({
     userId,
     symbol,
+    investmentType,
     quantity,
     pricePerUnit,
     fiatFee,
@@ -266,5 +270,63 @@ export const getPortfolioSummary = async (req: Request, res: Response): Promise<
   } catch (error: any) {
     console.error('❌ Error fetching portfolio summary:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// --- GET BULK PRICES FOR USER HOLDINGS ---
+export const getBulkPricesForUser = async (req: Request, res: Response): Promise<Response | void> => {
+  const userId = req.user?.uid;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing authenticated user ID' });
+  }
+
+  try {
+    const holdings = await prisma.portfolioHolding.findMany({
+      where: { userId },
+      select: { symbol: true },
+    });
+
+    const symbols = holdings.map((h) => h.symbol.toUpperCase());
+    const priceResults: Record<string, number> = {};
+
+    await Promise.allSettled(
+      symbols.map(async (symbol) => {
+        try {
+          if (cryptoMap[symbol]) {
+            // ✅ Crypto price from CoinGecko
+            const coingeckoId = cryptoMap[symbol];
+            const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+              params: {
+                ids: coingeckoId,
+                vs_currencies: 'usd',
+              },
+            });
+
+            const price = response.data[coingeckoId]?.usd;
+            if (price) priceResults[symbol] = price;
+          } else {
+            // ✅ Stock/ETF/Forex price from EODHD
+            const formattedSymbol = mapToEodFormat(symbol); // ✅ Use reusable logic
+            const response = await axios.get(`https://eodhd.com/api/real-time/${formattedSymbol}`, {
+              params: {
+                api_token: process.env.EODHD_API_KEY,
+                fmt: 'json',
+              },
+            });
+
+            const price = parseFloat(response.data?.close || response.data?.c);
+            if (!isNaN(price)) priceResults[symbol] = price;
+          }
+        } catch (err: any) {
+          console.warn(`⚠️ Failed to fetch ${symbol}:`, err.message);
+        }
+      })
+    );
+
+    return res.status(200).json(priceResults);
+  } catch (error) {
+    console.error('❌ Error fetching bulk prices:', error);
+    return res.status(500).json({ error: 'Failed to fetch bulk prices' });
   }
 };
