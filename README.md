@@ -66,6 +66,12 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 - Displays real-time prices and market value.
 - Authenticated fetch using Firebase token and backend APIs.
 
+### Sprint 11: Universal Asset Search
+- Implemented `/search` API to query CoinGecko and EODHD for crypto, stock, ETF, and currency tickers
+- Created `search.tsx` frontend page with query form and result table
+- Unified search across sources, resolves "BTC vs BTC.AX" problem
+- Handled fallback data, error logging, and UI states
+
 ---
 
 ## 📦 Stack
@@ -85,30 +91,42 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 
 ## 📌 Upcoming Sprints
 
-### Sprint 11: Bulk Price Fetching
-- Add support for batch symbol fetch on backend.
-- Fetch live prices for entire portfolio in one API call.
-- Improve performance on frontend load.
+### Sprint 12: Firebase Token Storage in Frontend
+- Store Firebase JWT in `localStorage`
+- Automatically include token in all API calls
+- Remove manual token pasting (Postman workaround ends)
 
-### Sprint 12: Ticker Search Endpoint
-- Build API to search all supported tickers.
-- Distinguish crypto vs stocks (e.g. BTC vs BTC.AX).
-- Use in transaction inputs to reduce user error.
+### Sprint 13: Holdings UI + Search Integration
+- Add button to select asset from `/search`
+- Use result to prefill new holding or transaction
+- Streamlined UI: Search → Select → Transact
 
-### Sprint 13: Budget & Debt Frontend
-- Display budget and debt activity in dashboard.
-- Show insights and summaries.
-- Allow new entries via simple form.
+### Sprint 14: Manual Transactions via CSV Upload
+- Create form to upload `.csv` file
+- Parse and validate entries
+- Insert multiple transactions in one batch
 
-### Sprint 14: Net Worth Dashboard
-- Visualize net worth over time.
-- Connect to backend endpoint and chart trends.
+### Sprint 15: Budget & Debt Tracker – Frontend UI
+- Add visual dashboards for budget + debt
+- Allow entry from unified transaction form (Income/Expense/Transfer/Debt)
 
-### Sprint 15+: Optional Features
-- Add cost basis methods (FIFO / LIFO)
-- Realized/unrealized gain calculations
+### Sprint 16: Net Worth Dashboard – Visuals
+- Chart net worth over time
+- Include filters: All, Platform, Asset Type, etc.
+
+---
+
+## 🔮 Future Features
+
+- Realized/unrealized gains tracking
+- FIFO & LIFO cost basis support
+- Multiple broker/platform accounts
 - Multi-currency support
-- Looker dashboard integration
+- Looker or Supabase chart integration
+- Gamification (streaks, achievements)
+- Monthly performance reports
+- Community Portfolio (Bill's journey)
+- Mobile-first layout for budget tracker
 
 ---
 
