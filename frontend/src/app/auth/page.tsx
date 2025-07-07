@@ -14,13 +14,18 @@ export default function AuthPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
 
-      localStorage.setItem('firebaseToken', token); // ✅ store for reuse
+      localStorage.setItem('firebaseToken', token); // ✅ store token for reuse
       localStorage.setItem('firebaseEmail', userCredential.user.email || '');
 
       setStatus('✅ Login successful!');
-    } catch (err: any) {
-      console.error('❌ Login error:', err.message);
-      setStatus('❌ Login failed: ' + err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error('❌ Login error:', err.message);
+        setStatus('❌ Login failed: ' + err.message);
+      } else {
+        console.error('❌ Login error:', err);
+        setStatus('❌ Login failed.');
+      }
     }
   };
 

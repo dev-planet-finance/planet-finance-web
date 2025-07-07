@@ -22,10 +22,16 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const token = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ijg3NzQ4NTAwMmYwNWJlMDI2N2VmNDU5ZjViNTEzNTMzYjVjNThjMTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vcGxhbmV0LWZpbmFuY2UtZGV2IiwiYXVkIjoicGxhbmV0LWZpbmFuY2UtZGV2IiwiYXV0aF90aW1lIjoxNzUxNjE0OTc2LCJ1c2VyX2lkIjoiaEhjRVF5eVhIRmhEMDBBOUY3V1JJQVBrTW9yMSIsInN1YiI6ImhIY0VReXlYSEZoRDAwQTlGN1dSSUFQa01vcjEiLCJpYXQiOjE3NTE2MTQ5NzYsImV4cCI6MTc1MTYxODU3NiwiZW1haWwiOiJkZW1vMTZAdXNlci5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiZGVtbzE2QHVzZXIuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.rq-7lsrziL_PtMewl3lhrxQYXVIYd0lA3WW_76uc2goQwNhz5SVtyHyGANFQpju5vaEcTM2kHDbCYKGY2rIszRS8cKLbvOjNpn3o6iOWVYGD-EX1KOkNus8b-W3C4i6WaKrdKrIL3eCyvPjIOsWewIs2Mv7Zvc_inM8HDRX9_sCtAMn7ASD9gFMJQJc167LxciOILVJnT7uhRCEOxcndDIMwNreXzk4JJDk_6X8thFuZFIWjgEiOV3YrQo3fsE2gJ_4F0EP0EtxpBQd7Ks-qiZdf0tVQ2DcacfmSw810L69Xw29cX9GRWmnEZzyOtLEN25NNIlEn_BTBhobckWjr0g'; // ✅ Paste your latest Firebase token
-
   useEffect(() => {
     const fetchSummary = async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('firebaseToken') : null;
+
+      if (!token) {
+        setError('Missing auth token. Please login at /auth.');
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch('http://localhost:4000/api/portfolio/summary', {
           headers: {
