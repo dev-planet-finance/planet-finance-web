@@ -18,59 +18,64 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 - Integrated JWT-based authentication.
 - Established role-based access controls.
 
-### Sprint 3: Portfolio Tracker - Basic CRUD
+### Sprint 3: Portfolio Tracker – Basic CRUD
 - Developed models for holdings and transactions.
 - Created endpoints for CRUD operations.
 - Established basic transaction recording.
 
-### Sprint 4: Portfolio Tracker - Transaction Actions
+### Sprint 4: Portfolio Tracker – Transaction Actions
 - Expanded transaction types.
 - Implemented corresponding logic.
 - Ensured accurate updates to holdings.
 
 ### Sprint 5: Portfolio Logic Enhancements
 - Implemented cost basis logic using AVG method (for Buy and DRIP actions).
-- Enhanced portfolioLogic.ts with robust transaction handling logic.
-- Validated results via Postman and summary dashboard calculations.
-- Added support for CashDividend, CashFee, CashDeposit, and CashWithdrawal.
-- Planned but not yet implemented:
-  - FIFO / LIFO cost basis methods.
-  - Realized vs. unrealized gains tracking.
-  - Total return over time (requires time-series holdings history).
-- Implemented TransferIn and TransferOut transactions.
-- Ensured accurate asset movement between platforms.
-- Updated portfolio summaries accordingly.
+- Enhanced `portfolioLogic.ts` with robust transaction handling.
+- Validated results via Postman and summary calculations.
+- Added support for:
+  - CashDividend, CashFee, CashDeposit, CashWithdrawal
+  - TransferIn and TransferOut transactions
+- [Planned but not yet implemented]:
+  - FIFO / LIFO methods
+  - Realized vs. unrealized gains
+  - Total return over time
 
-#### Sprint 6: Budget Tracker – Backend
+### Sprint 6: Budget Tracker – Backend
 - Created models for income, expenses, and transfers.
 - Implemented unified budget transaction flow.
-- Integrated recurring logic (future use).
+- Added fields for recurring logic (future UI use).
 
-#### Sprint 7: Debt Tracker – Backend
-- Created models: `Debt`, `DebtTransaction`.
-- Added logic for amortization and repayments.
-- Built endpoints to record debt activity and retrieve data.
+### Sprint 7: Debt Tracker – Backend
+- Created models: `Debt`, `DebtTransaction`
+- Built amortization and repayment logic.
+- Structured debts to sync with budget flow in future.
 
-#### Sprint 8: Net Worth Summary – Backend
-- Built endpoint to calculate total net worth by date.
-- Aggregates holdings, debts, and budget data.
-- Connected with `portfolioLogic.ts`, `debtLogic.ts`, and `budgetLogic.ts`.
+### Sprint 8: Net Worth Summary – Backend
+- Built endpoint to calculate net worth by date.
+- Aggregates portfolio, debt, and cash balances.
+- Connected to `portfolioLogic`, `budgetLogic`, `debtLogic`.
 
-#### Sprint 9: Market Data – Price API Integration
-- Integrated live asset price fetching from **Finnhub**, **EODHD**, and **CoinGecko**.
-- Designed fallback logic for global stock/ETF and crypto support.
-- Handles ASX, TSX, LSE, NSE, NYSE, NASDAQ, crypto and more.
+### Sprint 9: Market Data – Price API Integration
+- Integrated live asset prices via **EODHD**, **CoinGecko**, and fallback via **Finnhub**
+- Support for ASX, NASDAQ, NYSE, TSX, LSE, crypto, etc.
+- Smart routing via investment type
 
-#### Sprint 10: Portfolio Tracker – Frontend UI
-- Created portfolio dashboard in Next.js frontend.
-- Displays real-time prices and market value.
-- Authenticated fetch using Firebase token and backend APIs.
+### Sprint 10: Portfolio Tracker – Frontend UI
+- Created `/portfolio` dashboard in Next.js
+- Displayed real-time price + market value
+- Connected to backend API using Firebase token
 
 ### Sprint 11: Universal Asset Search
-- Implemented `/search` API to query CoinGecko and EODHD for crypto, stock, ETF, and currency tickers
-- Created `search.tsx` frontend page with query form and result table
-- Unified search across sources, resolves "BTC vs BTC.AX" problem
-- Handled fallback data, error logging, and UI states
+- Implemented `/search` backend endpoint using CoinGecko + EODHD
+- Built `/portfolio/search` frontend UI
+- Supports symbol disambiguation (e.g. BTC vs BTC.AX)
+- Dynamic result table with asset type and source
+
+### Sprint 12: Firebase Token Storage in Frontend
+- Created `/auth` login page in frontend
+- Captures Firebase JWT and stores in `localStorage`
+- Ends need for manual token generation via Postman
+- Future API calls can auto-attach token
 
 ---
 
@@ -91,28 +96,75 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 
 ## 📌 Upcoming Sprints
 
-### Sprint 12: Firebase Token Storage in Frontend
-- Store Firebase JWT in `localStorage`
-- Automatically include token in all API calls
-- Remove manual token pasting (Postman workaround ends)
+### Sprint 13: Token Auto-Attach to API Requests
+- Attach Firebase token to all fetch requests automatically
+- Add helper (e.g. `fetchWithToken`) to simplify secure calls
 
-### Sprint 13: Holdings UI + Search Integration
-- Add button to select asset from `/search`
-- Use result to prefill new holding or transaction
-- Streamlined UI: Search → Select → Transact
+### Sprint 14: Holdings UI + Search Integration
+- Add “Add to Portfolio” button in `/search` results
+- Prefill transaction form with asset data
+- Streamlined flow: Search → Select → Transact
 
-### Sprint 14: Manual Transactions via CSV Upload
-- Create form to upload `.csv` file
-- Parse and validate entries
-- Insert multiple transactions in one batch
+### Sprint 15: Manual Transactions via CSV Upload
+- Upload `.csv` for bulk investment transactions
+- Validate and display preview before insert
+- Batch insert into backend
 
-### Sprint 15: Budget & Debt Tracker – Frontend UI
-- Add visual dashboards for budget + debt
-- Allow entry from unified transaction form (Income/Expense/Transfer/Debt)
+### Sprint 16: Budget & Debt Tracker – Frontend UI
+- Build unified dashboard for Budget + Debt
+- Add Income/Expense/Transfer/Debt entry forms
+- Link to recurring logic if needed
 
-### Sprint 16: Net Worth Dashboard – Visuals
-- Chart net worth over time
-- Include filters: All, Platform, Asset Type, etc.
+### Sprint 17: Net Worth Dashboard – Visuals
+- Create net worth chart with history
+- Filters for platform, asset class, account
+
+### Sprint 18: Realized/Unrealized Gains & Return Metrics
+- Add logic to separate realized vs unrealized gains
+- Display % return, total return, IRR (future)
+- Store historical snapshot for each month (TBC)
+
+### Sprint 19: FIFO / LIFO Cost Basis Methods
+- Add dropdown in transaction form to select method
+- Update backend `portfolioLogic.ts` with method logic
+- Compare with AVG method
+
+### Sprint 20: Transaction Log Table UI
+- Create `/portfolio/transactions` frontend page
+- Display full log of all past buys/sells/dividends
+- Filters: symbol, action type, date
+
+### Sprint 21: Multi-Currency Support
+- Add currency field to holdings and transactions
+- Support FX conversion with live rates (CoinGecko)
+- Normalize portfolio value to user base currency
+
+### Sprint 22: Budget Tracker – Frontend Dashboard
+- Create `/budget` dashboard with monthly view
+- Add income/expense bar chart, category breakdown
+- Toggle filters by month, type, source
+
+### Sprint 23: Debt Tracker – Frontend Dashboard
+- Create `/debt` dashboard with list of debts
+- Show progress bars, interest vs principal split
+- Add debt entry/edit form
+
+### Sprint 24: Net Worth Visual Dashboard
+- Create `/networth` page
+- Add line chart over time using net worth endpoint
+- Toggle filters: platform, region, asset class
+
+### Sprint 25+: Platform Expansion & Growth
+- 🌍 Multi-account support (track multiple brokers)
+- 📈 Chart overlays: cost basis vs current price
+- 📦 Portfolio groups (e.g. Core vs Speculative)
+- 🔒 Add password reset, error boundaries, 2FA (TBD)
+- 📊 Connect to Supabase/Looker for data visualization
+- 📱 Optimize mobile-first experience (especially for budget)
+- 👥 Public Community Portfolio (Bill’s journey)
+- 📤 Export transactions to CSV or PDF
+- 🧠 Advanced features: auto-categorization, rules, AI prompts
+- 🌐 Spanish version of the app
 
 ---
 
