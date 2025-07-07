@@ -1,93 +1,57 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  Auth
-} from 'firebase/auth';
-import app from '@/lib/firebase';
+import { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebaseClient';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [response, setResponse] = useState('');
-  const [auth, setAuth] = useState<Auth | null>(null);
-
-  useEffect(() => {
-    setAuth(getAuth(app)); // ✅ Client-only
-  }, []);
-
-  const handleRegister = async () => {
-    if (!auth) return;
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setResponse(`✅ Registered: ${userCredential.user.email}`);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setResponse(`❌ Register failed: ${error.message}`);
-      } else {
-        setResponse('❌ Register failed: Unknown error');
-      }
-    }
-  };
+  const [status, setStatus] = useState('');
 
   const handleLogin = async () => {
-    if (!auth) return;
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setResponse(`✅ Logged in: ${userCredential.user.email}`);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setResponse(`❌ Login failed: ${error.message}`);
-      } else {
-        setResponse('❌ Login failed: Unknown error');
-      }
-    }
-  };
+      const token = await userCredential.user.getIdToken();
 
-  const handleLogout = async () => {
-    if (!auth) return;
-    try {
-      await signOut(auth);
-      setResponse('👋 Logged out');
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setResponse(`❌ Logout failed: ${error.message}`);
-      } else {
-        setResponse('❌ Logout failed: Unknown error');
-      }
+      localStorage.setItem('firebaseToken', token); // ✅ store for reuse
+      localStorage.setItem('firebaseEmail', userCredential.user.email || '');
+
+      setStatus('✅ Login successful!');
+    } catch (err: any) {
+      console.error('❌ Login error:', err.message);
+      setStatus('❌ Login failed: ' + err.message);
     }
   };
 
   return (
-    <main style={{ padding: 20 }}>
-      <h1>Planet Finance Web App</h1>
+    <div style={{ padding: '2rem' }}>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>🔐 Login</h1>
 
-      <div style={{ marginBottom: 20 }}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          style={{ display: 'block', marginBottom: 10, padding: 8, width: '100%' }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={{ display: 'block', marginBottom: 10, padding: 8, width: '100%' }}
-        />
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ display: 'block', margin: '1rem 0', padding: '0.5rem', width: '300px' }}
+      />
 
-        <button onClick={handleRegister} style={{ marginRight: 10 }}>Register</button>
-        <button onClick={handleLogin} style={{ marginRight: 10 }}>Login</button>
-        <button onClick={handleLogout}>Logout</button>
-      </div>
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        style={{ display: 'block', marginBottom: '1rem', padding: '0.5rem', width: '300px' }}
+      />
 
-      <p>{response}</p>
-    </main>
+      <button
+        onClick={handleLogin}
+        style={{ backgroundColor: '#0070f3', color: 'white', padding: '0.5rem 1rem' }}
+      >
+        Login
+      </button>
+
+      {status && <p style={{ marginTop: '1rem' }}>{status}</p>}
+    </div>
   );
 }
