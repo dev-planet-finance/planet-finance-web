@@ -7,6 +7,7 @@ type AssetResult = {
   symbol?: string;
   type: string;
   source: string;
+  price?: number;
 };
 
 export default function AssetSearchPage() {
@@ -22,6 +23,7 @@ export default function AssetSearchPage() {
     try {
       const response = await fetch(`http://localhost:4000/api/market/search?q=${query}`);
       const data = await response.json();
+      console.log('🚀 Received search results:', data);
       setResults(data);
     } catch (err) {
       console.error('❌ Failed to fetch assets:', err);
@@ -76,7 +78,9 @@ export default function AssetSearchPage() {
               <th align="left">Name</th>
               <th align="left">Symbol</th>
               <th align="left">Type</th>
+              <th align="left">Price</th>
               <th align="left">Source</th>
+              <th align="left">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -84,8 +88,36 @@ export default function AssetSearchPage() {
               <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
                 <td>{r.name || 'Unnamed Asset'}</td>
                 <td>{r.symbol || '—'}</td>
-                <td>{r.type}</td>
+                <td>{r.type || '—'}</td>
+                <td>{r.price ? `$${r.price.toFixed(2)}` : '—'}</td>
                 <td>{r.source}</td>
+                <td>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem(
+                        'selectedAsset',
+                        JSON.stringify({
+                          name: r.name,
+                          symbol: r.symbol,
+                          type: r.type,
+                          source: r.source,
+                        })
+                      );
+                      window.location.href = '/portfolio/add';
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      backgroundColor: '#4caf50',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    ➕ Add
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

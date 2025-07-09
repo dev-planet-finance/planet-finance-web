@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { normalizeAssetType } from '../utils/normalizeAssetType';
 dotenv.config();
 
 /** ------------------------------------------
@@ -52,12 +53,14 @@ export async function searchCryptoAssets(query: string) {
       symbol: c.symbol.toUpperCase(),
       type: 'Crypto',
       source: 'CoinGecko',
+      coingeckoId: c.id, // ✅ Include ID
     }));
 }
 
 /** ------------------------------------------
  * 🔍 Search Stock/ETF/Currency Assets (EODHD)
  --------------------------------------------- */
+
 export async function searchStockAssets(query: string) {
   const url = `https://eodhistoricaldata.com/api/search/${query}`;
 
@@ -71,12 +74,22 @@ export async function searchStockAssets(query: string) {
 
   const results = resp.data;
 
-  return results
-    .filter((s: any) => s.code && s.name)
-    .map((s: any) => ({
-      name: s.name || 'Unnamed Asset',
-      symbol: s.code || '',
-      type: s.Type || 'Stock',
-      source: 'EODHD',
-    }));
+  console.log('🔍 EODHD raw results:', results); // ✅ verify it's being hit
+
+  const mapped = results
+    .filter((s: any) => s.Code && s.Name)
+    .map((s: any) => {
+      const normalizedType = normalizeAssetType(s.Type || '');
+
+      return {
+        name: s.Name || 'Unnamed Asset',
+        symbol: s.Code || '',
+        type: normalizedType,
+        source: 'EODHD',
+      };
+    });
+
+  console.log('🧠 Mapped stock results:', mapped); // ✅ new debug line
+  return mapped;
 }
+

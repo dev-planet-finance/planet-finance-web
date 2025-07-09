@@ -45,7 +45,7 @@ export const createTransaction = async (req: Request, res: Response): Promise<Re
       date
     } = req.body;
 
-    if (!userId || !action || !symbol || !currency || !date) {
+    if (!userId || !action || !symbol || quantity === undefined || pricePerUnit === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 

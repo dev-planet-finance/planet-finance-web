@@ -76,12 +76,51 @@ export const searchAssets = async (req: Request, res: Response): Promise<void> =
 
   try {
     const [cryptos, stocks] = await Promise.all([
-      searchCryptoAssets(query),
+      searchCryptoAssets(query), // ✅ now includes `coingeckoId`
       searchStockAssets(query),
     ]);
 
-    const results = [...cryptos, ...stocks];
-    res.status(200).json(results);
+    const combined = [...cryptos, ...stocks];
+
+    // 🧠 Fetch live price for each asset
+    const enriched = await Promise.all(
+      combined.map(async (asset) => {
+        try {
+          let price = null;
+
+          if (asset.source === 'CoinGecko' && asset.coingeckoId) {
+            const resp = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+              params: {
+                ids: asset.coingeckoId,
+                vs_currencies: 'usd',
+              },
+            });
+            price = resp.data[asset.coingeckoId]?.usd || null;
+          }
+
+          if (asset.source === 'EODHD') {
+            const mappedSymbol = mapToEodFormat(asset.symbol || '');
+            const resp = await axios.get(`https://eodhd.com/api/real-time/${mappedSymbol}`, {
+              params: {
+                api_token: process.env.EODHD_API_KEY,
+                fmt: 'json',
+              },
+            });
+            price = parseFloat(resp.data?.close || resp.data?.c);
+            if (isNaN(price)) price = null;
+          }
+
+          return {
+            ...asset,
+            price,
+          };
+        } catch {
+          return { ...asset, price: null };
+        }
+      })
+    );
+
+    res.status(200).json(enriched);
   } catch (error) {
     console.error('❌ Error during asset search:', error);
     res.status(500).json({ error: 'Failed to search assets' });

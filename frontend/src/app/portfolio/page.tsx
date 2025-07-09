@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { fetchWithToken } from '@/lib/fetchWithToken';
 
 type HoldingSummary = {
   symbol: string;
@@ -24,20 +25,8 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     const fetchSummary = async () => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('firebaseToken') : null;
-
-      if (!token) {
-        setError('Missing auth token. Please login at /auth.');
-        setLoading(false);
-        return;
-      }
-
       try {
-        const res = await fetch('http://localhost:4000/api/portfolio/summary', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetchWithToken('http://localhost:4000/api/portfolio/summary');
 
         if (!res.ok) {
           throw new Error('Failed to fetch summary');
@@ -101,6 +90,7 @@ export default function PortfolioPage() {
                   style={{
                     fontSize: '0.75rem',
                     backgroundColor: h.investmentType === 'Crypto' ? '#ffe58f' : '#d6f5d6',
+                    color: '#000', // ✅ Fix for visibility
                     padding: '2px 6px',
                     borderRadius: '4px',
                     fontWeight: 600,
