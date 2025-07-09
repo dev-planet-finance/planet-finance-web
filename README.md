@@ -4,6 +4,57 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 
 ---
 
+Built using:
+- **Frontend**: Next.js (TypeScript) — Vercel
+- **Backend**: Express (TypeScript) — Railway
+- **Database**: PostgreSQL (via Railway)
+- **Auth**: Firebase (email/password only)
+- **Live Data**: CoinGecko (crypto) + EODHD (stocks, ETFs, forex)
+
+---
+
+## ✅ Modules Overview
+
+### 📊 Portfolio Tracker
+- Manual or CSV transaction input
+- Assets: Stocks, ETFs, Crypto, Forex, Options
+- Actions: Buy, Sell, DRIP, CashDividend, Deposit, Fee, Transfer
+- Average cost, FIFO, LIFO (in development)
+- Live price fetching (CoinGecko + EODHD)
+- Planned gamification: badges, streaks, achievements
+
+### 💰 Budget Tracker
+- Tracks Income, Expenses, and Transfers
+- Monthly budget categories (e.g. Groceries, Rent)
+- Actual vs Budget view
+- Multi-currency, category-level rollups
+- Optional linkage with portfolio cash deposits
+
+### 🏦 Debt Tracker
+- Supports Home, Car, and Personal loans
+- Auto-generated amortization tables
+- Manual repayments and extra contributions
+- Variable interest support
+- Payoff strategy tracking (Snowball, Avalanche)
+- Optional budget linkage (sync repayments into budget tab)
+
+---
+
+## 🚧 Current Status (MVP)
+
+| Component        | Backend | Frontend |
+|------------------|:-------:|:--------:|
+| Auth             | ✅      | ✅        |
+| Portfolio Logic  | ✅      | ✅        |
+| Budget Logic     | ✅      | 🔜        |
+| Debt Logic       | ✅      | 🔜        |
+| Live Price API   | ✅      | ✅        |
+| Asset Search     | ✅      | ✅        |
+| CSV Upload       | 🔜      | 🔜        |
+| Transactions Tab | 🔜      | 🔜        |
+
+---
+
 ## ✅ Project Progress (by Sprints)
 
 ## ✅ Completed Sprints
@@ -77,6 +128,19 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 - Ends need for manual token generation via Postman
 - Future API calls can auto-attach token
 
+### Sprint 13: Portfolio Add Form (Frontend)
+- Created /portfolio/add form that loads from selected asset.
+- Inputs for quantity and price.
+- Sends POST request with Firebase token to backend transaction API.
+- Error-handling and feedback messages included.
+
+### Sprint 14: Submit Transaction to Backend
+- Connected portfolio form to full backend transaction engine.
+- Added required fields (currency, date) to avoid Prisma validation errors.
+- Confirmed data saved into database with 201 Created response.
+- Finalized complete working pipeline: asset search → transaction entry → backend save.
+- Also added frontend price display for each asset in search results.
+
 ---
 
 ## 📦 Stack
@@ -96,65 +160,53 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 
 ## 📌 Upcoming Sprints
 
-### Sprint 13: Token Auto-Attach to API Requests
-- Attach Firebase token to all fetch requests automatically
-- Add helper (e.g. `fetchWithToken`) to simplify secure calls
+#### Sprint 15: CSV Upload – Portfolio
+- Drag-and-drop UI
+- Backend parser + feedback
+- Store transactions via bulk logic
 
-### Sprint 14: Holdings UI + Search Integration
-- Add “Add to Portfolio” button in `/search` results
-- Prefill transaction form with asset data
-- Streamlined flow: Search → Select → Transact
+#### Sprint 16: CSV Upload – Budget + Debt
+- Parser modules for category- and loan-based formats
+- Preview + validation
+- Bulk transaction creation
 
-### Sprint 15: Manual Transactions via CSV Upload
-- Upload `.csv` for bulk investment transactions
-- Validate and display preview before insert
-- Batch insert into backend
+#### Sprint 17: Unified Transactions Page
+- `/transactions` tab with toggle: Portfolio | Budget | Debt
+- View, filter, edit, delete transactions
+- Linked logic for multi-tab sync
 
-### Sprint 16: Budget & Debt Tracker – Frontend UI
-- Build unified dashboard for Budget + Debt
-- Add Income/Expense/Transfer/Debt entry forms
-- Link to recurring logic if needed
+#### Sprint 18: Budget Tracker Frontend
+- Category list with budget vs actual
+- Manual entry form
+- Calendar and summary views
 
-### Sprint 17: Net Worth Dashboard – Visuals
-- Create net worth chart with history
-- Filters for platform, asset class, account
+#### Sprint 19: Debt Tracker Frontend
+- Loan setup form
+- Visual amortization table
+- Manual repayment tab
 
-### Sprint 18: Realized/Unrealized Gains & Return Metrics
-- Add logic to separate realized vs unrealized gains
-- Display % return, total return, IRR (future)
-- Store historical snapshot for each month (TBC)
+#### Sprint 20: Portfolio Dashboard
+- Performance by asset, sector, region
+- Filters (day, week, YTD, custom)
+- Price change heatmaps
 
-### Sprint 19: FIFO / LIFO Cost Basis Methods
-- Add dropdown in transaction form to select method
-- Update backend `portfolioLogic.ts` with method logic
-- Compare with AVG method
+#### Sprint 21: Gamification System
+- Story mode unlocks
+- Badges, streaks, progress rings
+- Account-level achievement log
 
-### Sprint 20: Transaction Log Table UI
-- Create `/portfolio/transactions` frontend page
-- Display full log of all past buys/sells/dividends
-- Filters: symbol, action type, date
+#### Sprint 22: Production Readiness
+- Upgrade: Railway + Vercel + APIs
+- Add logging (Sentry) and usage analytics
+- Load testing for multi-user access
 
-### Sprint 21: Multi-Currency Support
-- Add currency field to holdings and transactions
-- Support FX conversion with live rates (CoinGecko)
-- Normalize portfolio value to user base currency
+#### Sprint 23: MVP Launch 🚀
+- UI polish
+- Public signup page
+- Shareable performance dashboard
+- CSV onboarding tips
 
-### Sprint 22: Budget Tracker – Frontend Dashboard
-- Create `/budget` dashboard with monthly view
-- Add income/expense bar chart, category breakdown
-- Toggle filters by month, type, source
-
-### Sprint 23: Debt Tracker – Frontend Dashboard
-- Create `/debt` dashboard with list of debts
-- Show progress bars, interest vs principal split
-- Add debt entry/edit form
-
-### Sprint 24: Net Worth Visual Dashboard
-- Create `/networth` page
-- Add line chart over time using net worth endpoint
-- Toggle filters: platform, region, asset class
-
-### Sprint 25+: Platform Expansion & Growth
+### Sprint after MVP: Platform Expansion & Growth
 - 🌍 Multi-account support (track multiple brokers)
 - 📈 Chart overlays: cost basis vs current price
 - 📦 Portfolio groups (e.g. Core vs Speculative)
@@ -164,7 +216,6 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 - 👥 Public Community Portfolio (Bill’s journey)
 - 📤 Export transactions to CSV or PDF
 - 🧠 Advanced features: auto-categorization, rules, AI prompts
-- 🌐 Spanish version of the app
 
 ---
 
@@ -179,6 +230,17 @@ A full-stack personal finance app built in TypeScript using **Next.js**, **Expre
 - Monthly performance reports
 - Community Portfolio (Bill's journey)
 - Mobile-first layout for budget tracker
+
+---
+
+## 🧠 Vision Summary
+
+Planet Finance Web App is:
+- 🔓 100% manual & CSV-driven
+- ⚙️ Powered by robust backend logic (custom handlers)
+- 📈 Competitive with the best apps on the market
+- 🔗 Unified: transactions sync across Budget, Portfolio, and Debt
+- 🔍 Transparent: All prices are live-fetched from trusted sources
 
 ---
 
