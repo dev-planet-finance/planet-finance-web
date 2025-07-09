@@ -22,7 +22,7 @@ export default function AddPortfolioPage() {
       try {
         setAsset(JSON.parse(stored));
       } catch (e) {
-        console.error('Failed to parse selectedAsset from localStorage');
+        console.error('Failed to parse selectedAsset from localStorage:', e); // ✅ FIXED HERE
       }
     }
   }, []);
@@ -43,8 +43,8 @@ export default function AddPortfolioPage() {
           action: 'Buy',
           quantity: parseFloat(quantity),
           pricePerUnit: parseFloat(price),
-          date: new Date().toISOString(), // ✅ Add this line
-          currency: 'USD', // ✅ Temporarily hardcoded until currency logic added
+          date: new Date().toISOString(), // ✅ Required by backend
+          currency: 'USD', // ✅ Temporary hardcode
         }),
       });
 
