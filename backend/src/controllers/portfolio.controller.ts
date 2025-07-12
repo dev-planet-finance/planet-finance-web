@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Express } from 'express';
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
 import { cryptoMap, mapToEodFormat } from '../services/priceFetcher';
@@ -8,12 +9,14 @@ import {
   handleDripTransaction,
   handleCashDividendTransaction,
   handleCashFeeTransaction,
+  handleCashInterestTransaction,
   handleCashDepositTransaction,
   handleCashWithdrawalTransaction,
   getHoldingsWithSummary,
   handleTransferOutTransaction,
   handleTransferInTransaction
 } from '../services/portfolioLogic';
+import { parse } from 'csv-parse/sync';
 
 const prisma = new PrismaClient();
 
@@ -42,114 +45,142 @@ export const createTransaction = async (req: Request, res: Response): Promise<Re
       totalCost,
       costBasisMethod,
       notes,
-      date
+      date,
     } = req.body;
 
-    if (!userId || !action || !symbol || quantity === undefined || pricePerUnit === undefined) {
+    if (!userId || !action || !symbol) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Handle Buy transaction logic (update or create holding)
     if (action === 'Buy') {
-  await handleBuyTransaction({
-    userId,
-    symbol,
-    investmentType,
-    quantity,
-    pricePerUnit,
-    fiatFee,
-    platform,
-  });
-}
+      await handleBuyTransaction({
+        userId,
+        symbol,
+        investmentType,
+        quantity,
+        pricePerUnit,
+        fiatFee,
+        platform,
+        currency,
+        fxRate,
+      });
+    }
 
     if (action === 'Sell') {
-  await handleSellTransaction({
-    userId,
-    symbol,
-    quantity,
-    platform,
-  });
-}
+      await handleSellTransaction({
+        userId,
+        symbol,
+        quantity,
+        pricePerUnit,
+        fiatFee,
+        platform,
+        currency,
+        fxRate,
+      });
+    }
 
     if (action === 'DRIP') {
-  await handleDripTransaction({
-    userId,
-    symbol,
-    quantity,
-    pricePerUnit,
-    platform,
-  });
-}
+      await handleDripTransaction({
+        userId,
+        symbol,
+        quantity,
+        pricePerUnit,
+        platform,
+      });
+    }
 
     if (action === 'CashDividend') {
-  await handleCashDividendTransaction({
-    userId,
-    symbol,
-    amount: totalCost, // using totalCost as input field for dividend amount
-    platform,
-  });
-}
+      await handleCashDividendTransaction({
+        userId,
+        symbol,
+        amount: totalCost,
+        currency,
+        platform,
+        fxRate,
+      });
+    }
 
     if (action === 'CashFee') {
-  await handleCashFeeTransaction({
-    userId,
-    totalCost,
-    currency,
-    date: new Date(date),
-  });
-}
+      await handleCashFeeTransaction({
+        userId,
+        amount: totalCost,
+        currency,
+        platform,
+        fxRate,
+      });
+    }
+
+    if (action === 'CashInterest') {
+      await handleCashInterestTransaction({
+        userId,
+        amount: totalCost,
+        currency,
+        platform,
+        fxRate,
+      });
+    }
 
     if (action === 'CashDeposit') {
       if (!totalCost || totalCost <= 0) {
         return res.status(400).json({ error: 'Missing or invalid deposit amount' });
-  }
+      }
 
-  await handleCashDepositTransaction({
-    userId,
-    amount: totalCost,
-    platform,
-  });
-}
+      await handleCashDepositTransaction({
+        userId,
+        amount: totalCost,
+        currency,
+        platform,
+        fxRate,
+      });
+    }
 
     if (action === 'CashWithdrawal') {
       if (!totalCost || totalCost <= 0) {
         return res.status(400).json({ error: 'Missing or invalid withdrawal amount' });
-  }
+      }
 
-  await handleCashWithdrawalTransaction({
-    userId,
-    amount: totalCost,
-    platform,
-  });
-}
+      await handleCashWithdrawalTransaction({
+        userId,
+        amount: totalCost,
+        currency,
+        platform,
+        fxRate,
+      });
+    }
 
     if (action === 'TransferOut') {
       if (!quantity || quantity <= 0) {
         return res.status(400).json({ error: 'Missing or invalid TransferOut quantity' });
-  }
+      }
 
-  await handleTransferOutTransaction({
-    userId,
-    symbol,
-    quantity,
-    platform,
-  });
-}
+      await handleTransferOutTransaction({
+        userId,
+        symbol,
+        quantity,
+        platform,
+      });
+    }
+
+    console.log(`🔍 Looking for holding with userId=${userId}, symbol=${symbol}, platform=${platform}`);
+
 
     if (action === 'TransferIn') {
       if (!quantity || !pricePerUnit) {
         return res.status(400).json({ error: 'Missing quantity or pricePerUnit for TransferIn' });
-  }
+      }
 
-  await handleTransferInTransaction({
-    userId,
-    symbol,
-    quantity,
-    pricePerUnit,
-    platform,
-  });
-}
+      await handleTransferInTransaction({
+        userId,
+        symbol,
+        quantity,
+        pricePerUnit,
+        platform,
+      });
+    }
 
+const safeDate = typeof date === 'string' && !isNaN(Date.parse(date)) ? new Date(date) : new Date();
+
+    // Store the raw transaction record
     const transaction = await prisma.portfolioTransaction.create({
       data: {
         userId,
@@ -161,7 +192,7 @@ export const createTransaction = async (req: Request, res: Response): Promise<Re
         pricePerUnit,
         fiatFee,
         cryptoFee,
-        currency,
+        currency: currency ?? '',
         fxRate,
         platform,
         assetClass,
@@ -172,8 +203,8 @@ export const createTransaction = async (req: Request, res: Response): Promise<Re
         totalCost,
         costBasisMethod,
         notes,
-        date: new Date(date),
-      }
+        date: date && !isNaN(new Date(date).getTime()) ? new Date(date) : new Date(),
+      },
     });
 
     return res.status(201).json(transaction);
@@ -182,6 +213,7 @@ export const createTransaction = async (req: Request, res: Response): Promise<Re
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 // --- GET TRANSACTIONS BY AUTHENTICATED USER ---
 export const getTransactionsByUserId = async (req: Request, res: Response): Promise<Response | void> => {
@@ -213,7 +245,7 @@ export const createHolding = async (req: Request, res: Response): Promise<Respon
       cryptoName,
       investmentType,
       quantity,
-      averageCost,
+      averagePrice,
       currentPrice,
       platform,
       brokerAccountId,
@@ -226,7 +258,7 @@ export const createHolding = async (req: Request, res: Response): Promise<Respon
       isActive
     } = req.body;
 
-    if (!userId || !symbol || !investmentType || quantity == null || averageCost == null) {
+    if (!userId || !symbol || !investmentType || quantity == null || averagePrice == null) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -237,7 +269,7 @@ export const createHolding = async (req: Request, res: Response): Promise<Respon
         cryptoName,
         investmentType,
         quantity,
-        averageCost,
+        averagePrice,
         currentPrice,
         platform,
         brokerAccountId,
@@ -328,5 +360,91 @@ export const getBulkPricesForUser = async (req: Request, res: Response): Promise
   } catch (error) {
     console.error('❌ Error fetching bulk prices:', error);
     return res.status(500).json({ error: 'Failed to fetch bulk prices' });
+  }
+};
+
+// --- UPLOAD TRANSACTIONS VIA CSV ---
+export const uploadTransactionsCSV = async (
+  req: Request & { file?: Express.Multer.File },
+  res: Response
+): Promise<void> => {
+
+  try {
+    const userId = req.user?.uid;
+    const fileBuffer = req.file?.buffer;
+
+    if (!userId || !fileBuffer) {
+      res.status(400).json({ error: 'Missing file or user' });
+      return;
+    }
+
+    const fileContent = fileBuffer.toString('utf-8').replace(/^\uFEFF/, '').replace(/["]+/g, ''); // Remove BOM and stray quotes
+
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      delimiter: ',',
+      trim: true,
+      relax_column_count: true,
+    });
+
+    const created = [];
+
+    for (const row of records) {
+      const {
+        action,
+        symbol,
+        quantity,
+        pricePerUnit,
+        currency,
+        platform,
+        date
+      } = row;
+
+      if (!action || !symbol || !quantity || !pricePerUnit || !currency || !date) {
+        console.warn('⚠️ Skipping row with missing fields:', row);
+        continue;
+      }
+
+      const tx = await prisma.portfolioTransaction.create({
+        data: {
+          userId,
+          action,
+          symbol,
+          quantity: parseFloat(quantity),
+          pricePerUnit: parseFloat(pricePerUnit),
+          currency,
+          platform,
+          date: new Date(date),
+        },
+      });
+
+      created.push(tx);
+    }
+
+    res.status(201).json({ message: `${created.length} transactions uploaded`, transactions: created });
+  } catch (error) {
+    console.error('❌ Error uploading CSV:', error);
+    res.status(500).json({ error: 'Failed to upload CSV' });
+  }
+};
+
+
+// --- TEMP DEBUG: LIST USER HOLDINGS ---
+export const listUserHoldings = async (req: Request, res: Response): Promise<Response | void> => {
+  try {
+    const userId = req.user?.uid;
+    if (!userId) return res.status(400).json({ error: 'Missing user ID' });
+    
+
+    const holdings = await prisma.portfolioHolding.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    res.status(200).json(holdings);
+  } catch (err) {
+    console.error('Error listing holdings:', err);
+    res.status(500).json({ error: 'Could not fetch holdings' });
   }
 };

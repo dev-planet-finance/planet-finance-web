@@ -93,3 +93,45 @@ export async function searchStockAssets(query: string) {
   return mapped;
 }
 
+import { PortfolioHolding } from '@prisma/client';
+
+export async function getLivePricesForHoldings(
+  holdings: PortfolioHolding[]
+): Promise<Record<string, number>> {
+  const symbols = holdings.map(h => h.symbol.toUpperCase());
+  const priceMap: Record<string, number> = {};
+
+  await Promise.allSettled(
+    symbols.map(async (symbol) => {
+      try {
+        if (cryptoMap[symbol]) {
+          const coingeckoId = cryptoMap[symbol];
+          const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+            params: {
+              ids: coingeckoId,
+              vs_currencies: 'usd',
+            },
+          });
+          const price = response.data[coingeckoId]?.usd;
+          if (price) priceMap[symbol] = price;
+        } else {
+          const formattedSymbol = mapToEodFormat(symbol);
+          const response = await axios.get(`https://eodhd.com/api/real-time/${formattedSymbol}`, {
+            params: {
+              api_token: process.env.EODHD_API_KEY,
+              fmt: 'json',
+            },
+          });
+
+          const price = parseFloat(response.data?.close || response.data?.c);
+          if (!isNaN(price)) priceMap[symbol] = price;
+        }
+      } catch (err: any) {
+        console.warn(`⚠️ Failed to fetch price for ${symbol}:`, err.message);
+      }
+    })
+  );
+
+  return priceMap;
+}
+

@@ -16,7 +16,7 @@ model PortfolioHolding {
   cryptoName              String?
   investmentType          InvestmentType
   quantity                Decimal
-  averageCost             Decimal
+  averagePrice            Decimal?
   currentPrice            Decimal?
   totalDividends          Decimal?
   dividendReinvestEnabled Boolean @default(false)

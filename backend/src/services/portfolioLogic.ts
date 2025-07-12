@@ -8,85 +8,80 @@ const prisma = new PrismaClient();
  * - Updates or creates a holding
  * - Recalculates average cost basis
  */
-export async function handleBuyTransaction(transaction: {
+export async function handleBuyTransaction({
+  userId,
+  symbol,
+  investmentType,
+  quantity,
+  pricePerUnit,
+  fiatFee,
+  platform,
+  currency,
+  fxRate,
+}: {
   userId: string;
   symbol: string;
-  investmentType: string;
+  investmentType?: InvestmentType;
   quantity: number;
   pricePerUnit: number;
   fiatFee?: number;
   platform?: string;
+  currency: string;
+  fxRate?: number;
 }) {
-  const {
-    userId,
-    symbol,
-    investmentType,
-    quantity,
-    pricePerUnit,
-    fiatFee = 0,
-    platform,
-  } = transaction;
+  const qty = new Decimal(quantity);
+  const price = new Decimal(pricePerUnit);
+  const fee = fiatFee ? new Decimal(fiatFee) : new Decimal(0);
 
-  const existingHolding = await prisma.portfolioHolding.findFirst({
-    where: {
-      userId,
-      symbol,
-      platform,
-    },
+  const cost = qty.mul(price).add(fee);
+
+
+  const existing = await prisma.portfolioHolding.findFirst({
+    where: { userId, symbol },
   });
 
-  const totalCost = new Decimal(quantity).times(pricePerUnit).plus(fiatFee);
+  if (existing) {
+    const newQty = existing.quantity.add(qty);
+    const newTotalCost = existing.quantity.mul(existing.averagePrice ?? 0).add(cost);
+    const newAvgPrice = newTotalCost.div(newQty);
 
-  // Validate and convert to enum
-  let parsedInvestmentType: InvestmentType;
-  switch (investmentType.toLowerCase()) {
-    case 'crypto':
-      parsedInvestmentType = InvestmentType.Crypto;
-      break;
-    case 'cash':
-      parsedInvestmentType = InvestmentType.Cash;
-      break;
-    case 'stock':
-      parsedInvestmentType = InvestmentType.Stock;
-      break;
-    case 'etf':
-      parsedInvestmentType = InvestmentType.ETF;
-      break;
-    case 'forex':
-      parsedInvestmentType = InvestmentType.Forex;
-      break;
-    default:
-      parsedInvestmentType = InvestmentType.Stock; // fallback
-  }
-
-  if (!existingHolding) {
-    return await prisma.portfolioHolding.create({
+    await prisma.portfolioHolding.update({
+      where: { id: existing.id },
       data: {
-        userId,
-        symbol,
-        investmentType: parsedInvestmentType, // ✅ FIXED
-        quantity: new Decimal(quantity),
-        averageCost: new Decimal(pricePerUnit),
-        currentPrice: new Decimal(pricePerUnit),
-        platform,
+        quantity: newQty,
+        averagePrice: newAvgPrice,
+        updatedAt: new Date(),
       },
     });
   } else {
-    const existingTotalCost = new Decimal(existingHolding.quantity).times(existingHolding.averageCost);
-    const newTotalQuantity = new Decimal(existingHolding.quantity).plus(quantity);
-    const newAverageCost = existingTotalCost.plus(totalCost).dividedBy(newTotalQuantity);
-
-    return await prisma.portfolioHolding.update({
-      where: { id: existingHolding.id },
+    await prisma.portfolioHolding.create({
       data: {
-        quantity: newTotalQuantity,
-        averageCost: newAverageCost,
-        currentPrice: new Decimal(pricePerUnit),
+        userId,
+        symbol,
+        investmentType: investmentType || InvestmentType.Stock,
+        quantity: qty,
+        averagePrice: price,
+        platform,
+        notes: '',
       },
     });
   }
-}
 
+  await prisma.portfolioTransaction.create({
+    data: {
+      userId,
+      action: 'Buy',
+      symbol,
+      quantity: qty,
+      pricePerUnit: price,
+      fiatFee: fee,
+      currency,
+      fxRate: fxRate ? new Decimal(fxRate) : null,
+      platform,
+      date: new Date(),
+    },
+  });
+}
 
 /**
  * Handles a 'Sell' transaction:
@@ -94,84 +89,129 @@ export async function handleBuyTransaction(transaction: {
  * - Keeps average cost unchanged (AVG method)
  * - Removes holding if quantity becomes zero
  */
-export async function handleSellTransaction(transaction: {
+export async function handleSellTransaction({
+  userId,
+  symbol,
+  quantity,
+  pricePerUnit,
+  fiatFee,
+  currency,
+  platform,
+  fxRate,
+}: {
   userId: string;
   symbol: string;
-  quantity: number;
+  quantity: Decimal;
+  pricePerUnit: Decimal;
+  fiatFee?: Decimal;
+  currency: string;
   platform?: string;
+  fxRate?: Decimal;
 }) {
-  const { userId, symbol, quantity, platform } = transaction;
-
-  const existingHolding = await prisma.portfolioHolding.findFirst({
+  const existing = await prisma.portfolioHolding.findFirst({
     where: { userId, symbol, platform },
   });
 
-  if (!existingHolding) {
-    throw new Error('Holding not found for Sell transaction.');
+  if (!existing || existing.quantity.lt(quantity)) {
+    throw new Error('Not enough quantity to sell');
   }
 
-  const currentQty = new Decimal(existingHolding.quantity);
-  const sellQty = new Decimal(quantity);
+  const newQty = existing.quantity.sub(quantity);
+  const proceeds = quantity.mul(pricePerUnit).sub(fiatFee || 0);
 
-  if (sellQty.gt(currentQty)) {
-    throw new Error('Sell quantity exceeds current holding quantity.');
-  }
-
-  const newQty = currentQty.minus(sellQty);
-
+  // Update or delete the holding
   if (newQty.equals(0)) {
-    // If all sold, delete holding
-    await prisma.portfolioHolding.delete({
-      where: { id: existingHolding.id },
+    await prisma.portfolioHolding.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.portfolioHolding.update({
+      where: { id: existing.id },
+      data: { quantity: newQty, updatedAt: new Date() },
+    });
+  }
+
+  // Add proceeds to cash (e.g. USD)
+  const cashSymbol = currency.toUpperCase(); // e.g. USD, AUD
+  const cashHolding = await prisma.portfolioHolding.findFirst({
+    where: { userId, symbol: cashSymbol, investmentType: 'Cash', platform },
+  });
+
+  if (cashHolding) {
+    await prisma.portfolioHolding.update({
+      where: { id: cashHolding.id },
+      data: {
+        quantity: cashHolding.quantity.add(proceeds),
+        updatedAt: new Date(),
+      },
     });
   } else {
-    // Otherwise, update holding quantity
-    await prisma.portfolioHolding.update({
-      where: { id: existingHolding.id },
+    await prisma.portfolioHolding.create({
       data: {
-        quantity: newQty,
-        // averageCost remains the same in AVG method
+        userId,
+        symbol: cashSymbol,
+        investmentType: InvestmentType.Cash,
+        quantity: proceeds,
+        averagePrice: undefined, // ⛔ no avg price for cash
+        platform,
+        notes: '',
       },
     });
   }
+
+  // Log the transaction
+  await prisma.portfolioTransaction.create({
+    data: {
+      userId,
+      action: 'Sell',
+      symbol,
+      quantity,
+      pricePerUnit,
+      fiatFee,
+      currency,
+      fxRate: fxRate || null,
+      platform,
+      date: new Date(),
+    },
+  });
+
+  console.log(`✅ Sold ${quantity} of ${symbol} @ $${pricePerUnit} → proceeds $${proceeds} → +${currency} cash`);
 }
+
+import { getLivePricesForHoldings } from '../services/priceFetcher';
 
 export async function getHoldingsWithSummary(userId: string) {
   const holdings = await prisma.portfolioHolding.findMany({
     where: { userId },
   });
 
-  // TEMP: Use fake current prices (real API comes later)
-  const fakePrices: Record<string, number> = {
-    AAPL: 180,
-    TSLA: 250,
-    BTC: 65000,
-    ETH: 3500,
-  };
+  if (holdings.length === 0) return [];
+
+  const priceMap = await getLivePricesForHoldings(holdings);
 
   return holdings.map(h => {
-    const currentPrice = fakePrices[h.symbol] ?? 0;
-    const marketValue = new Decimal(h.quantity).times(currentPrice);
-    const costBasis = new Decimal(h.quantity).times(h.averageCost);
+    const latestPrice = priceMap[h.symbol] ?? 0;
+    const marketValue = new Decimal(h.quantity).times(latestPrice);
+    const costBasis = new Decimal(h.quantity).times(h.averagePrice ?? 0);
     const gain = marketValue.minus(costBasis);
     const gainPercent = costBasis.equals(0) ? null : gain.dividedBy(costBasis).times(100);
 
     return {
       symbol: h.symbol,
       investmentType: h.investmentType,
-      quantity: h.quantity,
-      averageCost: h.averageCost,
-      currentPrice,
+      quantity: h.quantity.toNumber(),
+      averagePrice: h.averagePrice?.toNumber() ?? null,
+      currentPrice: latestPrice,
       marketValue: marketValue.toFixed(2),
       gain: gain.toFixed(2),
       gainPercent: gainPercent?.toFixed(2) ?? null,
-      assetClass: h.assetClass,
       platform: h.platform,
       strategy: h.strategy,
       region: h.region,
+      assetClass: h.assetClass,
+      updatedAt: h.updatedAt,
     };
   });
 }
+
 
 /**
  * Handles a 'DRIP' transaction:
@@ -215,12 +255,12 @@ export async function handleDripTransaction(transaction: {
         symbol,
         investmentType: 'Stock', // TEMP — enum required
         quantity: new Decimal(quantity),
-        averageCost: new Decimal(pricePerUnit),
+        averagePrice: new Decimal(pricePerUnit),
         platform,
       },
     });
   } else {
-    const existingTotalCost = new Decimal(existingHolding.quantity).times(existingHolding.averageCost);
+    const existingTotalCost = new Decimal(existingHolding.quantity).times(existingHolding.averagePrice ?? 0);
     const newTotalQuantity = new Decimal(existingHolding.quantity).plus(quantity);
     const newAverageCost = existingTotalCost.plus(dripCost).dividedBy(newTotalQuantity);
 
@@ -228,7 +268,7 @@ export async function handleDripTransaction(transaction: {
       where: { id: existingHolding.id },
       data: {
         quantity: newTotalQuantity,
-        averageCost: newAverageCost,
+        averagePrice: newAverageCost,
       },
     });
   }
@@ -239,20 +279,61 @@ export async function handleDripTransaction(transaction: {
  * - Does not update holding
  * - Only stores transaction for income tracking
  */
-export async function handleCashDividendTransaction(transaction: {
+export async function handleCashDividendTransaction({
+  userId,
+  symbol,
+  amount,
+  currency,
+  platform,
+  fxRate,
+}: {
   userId: string;
-  symbol: string;
-  amount: number;
+  symbol: string; // asset symbol that generated dividend
+  amount: Decimal;
+  currency: string;
   platform?: string;
+  fxRate?: Decimal;
 }) {
-  const { userId, symbol, amount, platform } = transaction;
+  const cashSymbol = currency.toUpperCase();
 
-  if (!amount || amount <= 0) {
-    throw new Error('Invalid dividend amount.');
+  const existing = await prisma.portfolioHolding.findFirst({
+    where: { userId, symbol: cashSymbol, investmentType: 'Cash', platform },
+  });
+
+  if (existing) {
+    await prisma.portfolioHolding.update({
+      where: { id: existing.id },
+      data: {
+        quantity: existing.quantity.add(amount),
+        updatedAt: new Date(),
+      },
+    });
+  } else {
+    await prisma.portfolioHolding.create({
+      data: {
+        userId,
+        symbol: cashSymbol,
+        investmentType: InvestmentType.Cash,
+        quantity: amount,
+        averagePrice: undefined,
+        platform,
+      },
+    });
   }
 
-  // Log only – doesn't update holdings
-  console.log(`💸 Cash dividend received for ${symbol}: $${amount} on platform ${platform}`);
+  await prisma.portfolioTransaction.create({
+    data: {
+      userId,
+      action: 'CashDividend',
+      symbol,
+      quantity: amount,
+      pricePerUnit: new Decimal(1),
+      currency: cashSymbol,
+      fxRate: fxRate || null,
+      platform,
+      date: new Date(),
+    },
+  });
 }
 
 /**
@@ -260,98 +341,213 @@ export async function handleCashDividendTransaction(transaction: {
  * - For now, just validates and logs the transaction
  * - In future: will deduct from cash balance in linked account
  */
-export async function handleCashFeeTransaction(transaction: {
+export async function handleCashFeeTransaction({
+  userId,
+  amount,
+  currency,
+  platform,
+  fxRate,
+}: {
   userId: string;
-  totalCost: number;
+  amount: Decimal;
   currency: string;
-  date: Date;
-}) {
-  const { userId, totalCost, currency, date } = transaction;
-
-  if (!totalCost || totalCost <= 0) {
-    throw new Error('Invalid CashFee amount.');
-  }
-
-  // Placeholder for future cash account logic
-  console.log(`💸 CashFee recorded for user ${userId}: -${totalCost} ${currency} on ${date.toISOString()}`);
-}
-
-export async function handleCashDepositTransaction(transaction: {
-  userId: string;
-  amount: number;
   platform?: string;
+  fxRate?: Decimal;
 }) {
-  const { userId, amount, platform } = transaction;
+  const cashSymbol = currency.toUpperCase();
 
-  if (!amount || amount <= 0) {
-    throw new Error('Invalid deposit amount.');
-  }
-
-  const existingHolding = await prisma.portfolioHolding.findFirst({
-    where: { userId, symbol: 'CASH', platform },
+  const existing = await prisma.portfolioHolding.findFirst({
+    where: { userId, symbol: cashSymbol, investmentType: 'Cash', platform },
   });
 
-  if (!existingHolding) {
-    return await prisma.portfolioHolding.create({
+  if (!existing || existing.quantity.lt(amount)) {
+    throw new Error('Insufficient cash for fee deduction.');
+  }
+
+  await prisma.portfolioHolding.update({
+    where: { id: existing.id },
+    data: {
+      quantity: existing.quantity.sub(amount),
+      updatedAt: new Date(),
+    },
+  });
+
+  await prisma.portfolioTransaction.create({
+    data: {
+      userId,
+      action: 'CashFee',
+      symbol: cashSymbol,
+      quantity: amount,
+      pricePerUnit: new Decimal(1),
+      currency: cashSymbol,
+      fxRate: fxRate || null,
+      platform,
+      date: new Date(),
+    },
+  });
+}
+
+export async function handleCashInterestTransaction({
+  userId,
+  amount,
+  currency,
+  platform,
+  fxRate,
+}: {
+  userId: string;
+  amount: Decimal;
+  currency: string;
+  platform?: string;
+  fxRate?: Decimal;
+}) {
+  const cashSymbol = currency.toUpperCase();
+
+  const existing = await prisma.portfolioHolding.findFirst({
+    where: { userId, symbol: cashSymbol, investmentType: 'Cash', platform },
+  });
+
+  if (existing) {
+    await prisma.portfolioHolding.update({
+      where: { id: existing.id },
       data: {
-        userId,
-        symbol: 'CASH',
-        investmentType: InvestmentType.Cash,
-        quantity: new Decimal(amount),
-        averageCost: new Decimal(1),
-        platform,
+        quantity: existing.quantity.add(amount),
+        updatedAt: new Date(),
       },
     });
   } else {
-    const updatedQuantity = new Decimal(existingHolding.quantity).plus(amount);
-
-    return await prisma.portfolioHolding.update({
-      where: { id: existingHolding.id },
+    await prisma.portfolioHolding.create({
       data: {
-        quantity: updatedQuantity,
+        userId,
+        symbol: cashSymbol,
+        investmentType: InvestmentType.Cash,
+        quantity: amount,
+        averagePrice: undefined,
+        platform,
       },
     });
   }
+
+  await prisma.portfolioTransaction.create({
+    data: {
+      userId,
+      action: 'CashInterest',
+      symbol: cashSymbol,
+      quantity: amount,
+      pricePerUnit: new Decimal(1),
+      currency: cashSymbol,
+      fxRate: fxRate || null,
+      platform,
+      date: new Date(),
+    },
+  });
 }
+
+
+export async function handleCashDepositTransaction({
+  userId,
+  amount,
+  currency,
+  platform,
+  fxRate,
+}: {
+  userId: string;
+  amount: Decimal;
+  currency: string;
+  platform?: string;
+  fxRate?: Decimal;
+}) {
+  const symbol = currency.toUpperCase();
+
+  const existing = await prisma.portfolioHolding.findFirst({
+    where: { userId, symbol, investmentType: 'Cash', platform },
+  });
+
+  if (existing) {
+    await prisma.portfolioHolding.update({
+      where: { id: existing.id },
+      data: {
+        quantity: existing.quantity.add(amount),
+        updatedAt: new Date(),
+      },
+    });
+  } else {
+    await prisma.portfolioHolding.create({
+      data: {
+        userId,
+        symbol,
+        investmentType: InvestmentType.Cash,
+        quantity: amount,
+        averagePrice: undefined,
+        platform,
+        notes: '',
+      },
+    });
+  }
+
+  await prisma.portfolioTransaction.create({
+    data: {
+      userId,
+      action: 'CashDeposit',
+      symbol,
+      quantity: amount,
+      pricePerUnit: new Decimal(1),
+      currency: symbol,
+      fxRate: fxRate || null,
+      platform,
+      date: new Date(),
+    },
+  });
+}
+
 
 /**
  * Handles a 'CashWithdrawal' transaction:
  * - Decreases the user's CASH holding
  */
-export async function handleCashWithdrawalTransaction(transaction: {
+export async function handleCashWithdrawalTransaction({
+  userId,
+  amount,
+  currency,
+  platform,
+  fxRate,
+}: {
   userId: string;
-  amount: number;
+  amount: Decimal;
+  currency: string;
   platform?: string;
+  fxRate?: Decimal;
 }) {
-  const { userId, amount, platform } = transaction;
+  const symbol = currency.toUpperCase();
 
-  if (!amount || amount <= 0) {
-    throw new Error('Invalid withdrawal amount.');
-  }
-
-  const existingHolding = await prisma.portfolioHolding.findFirst({
-    where: { userId, symbol: 'CASH', platform },
+  const existing = await prisma.portfolioHolding.findFirst({
+    where: { userId, symbol, investmentType: 'Cash', platform },
   });
 
-  if (!existingHolding) {
-    throw new Error('No CASH holding found for this user/platform.');
-  }
-
-  const currentBalance = new Decimal(existingHolding.quantity);
-  const newBalance = currentBalance.minus(amount);
-
-  if (newBalance.lt(0)) {
-    throw new Error('Withdrawal exceeds available cash balance.');
+  if (!existing || existing.quantity.lt(amount)) {
+    throw new Error('Not enough cash to withdraw');
   }
 
   await prisma.portfolioHolding.update({
-    where: { id: existingHolding.id },
+    where: { id: existing.id },
     data: {
-      quantity: newBalance,
+      quantity: existing.quantity.sub(amount),
+      updatedAt: new Date(),
     },
   });
 
-  console.log(`💸 CashWithdrawal: -${amount} by ${userId} on ${platform}`);
+  await prisma.portfolioTransaction.create({
+    data: {
+      userId,
+      action: 'CashWithdrawal',
+      symbol,
+      quantity: amount,
+      pricePerUnit: new Decimal(1),
+      currency: symbol,
+      fxRate: fxRate || null,
+      platform,
+      date: new Date(),
+    },
+  });
 }
 
 /**
@@ -367,34 +563,26 @@ export async function handleTransferOutTransaction(transaction: {
 }) {
   const { userId, symbol, quantity, platform } = transaction;
 
+  // 🔍 New log to debug matching issue
+  console.log('🟡 TransferOut Debug');
+  console.log('User:', userId);
+  console.log('Symbol:', symbol);
+  console.log('Platform:', platform);
+
   const holding = await prisma.portfolioHolding.findFirst({
     where: { userId, symbol, platform },
   });
 
   if (!holding) {
-    throw new Error('Holding not found for TransferOut');
-  }
-
-  const currentQty = new Decimal(holding.quantity);
-  const transferQty = new Decimal(quantity);
-
-  if (transferQty.gt(currentQty)) {
-    throw new Error('Transfer quantity exceeds current holding quantity');
-  }
-
-  const newQty = currentQty.minus(transferQty);
-
-  if (newQty.equals(0)) {
-    await prisma.portfolioHolding.delete({ where: { id: holding.id } });
-  } else {
-    await prisma.portfolioHolding.update({
-      where: { id: holding.id },
-      data: { quantity: newQty },
+    console.log('❌ No holding found. Trying fallback query without platform...');
+    const fallback = await prisma.portfolioHolding.findMany({
+      where: { userId, symbol },
     });
-  }
+    console.log('🔍 Fallback results:', fallback);
 
-  console.log(`📤 Transferred OUT ${quantity} of ${symbol} from ${platform}`);
-}
+    throw new Error('Holding not found for TransferOut');
+  }}
+
 
 
 /**
@@ -424,12 +612,12 @@ export async function handleTransferInTransaction(transaction: {
         symbol,
         investmentType: 'Stock', // TEMP default
         quantity: new Decimal(quantity),
-        averageCost: new Decimal(pricePerUnit),
+        averagePrice: new Decimal(pricePerUnit),
         platform,
       },
     });
   } else {
-    const existingCost = new Decimal(existingHolding.quantity).times(existingHolding.averageCost);
+    const existingCost = new Decimal(existingHolding.quantity).times(existingHolding.averagePrice ?? 0);
     const totalQty = new Decimal(existingHolding.quantity).plus(quantity);
     const newAvg = existingCost.plus(incomingCost).dividedBy(totalQty);
 
@@ -437,7 +625,7 @@ export async function handleTransferInTransaction(transaction: {
       where: { id: existingHolding.id },
       data: {
         quantity: totalQty,
-        averageCost: newAvg,
+        averagePrice: newAvg,
       },
     });
   }
